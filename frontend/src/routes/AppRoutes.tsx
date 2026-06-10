@@ -9,6 +9,8 @@ import LoginPage from "../pages/Login/LoginPage";
 import DashboardPage from "../pages/Dashboard/DashboardPage";
 
 import PrivateRoute from "./PrivateRoute";
+import EmployeesPage from "../pages/Employees/EmployeesPage";
+import MainLayout from "../layouts/MainLayout";
 
 export default function AppRoutes() {
   return (
@@ -28,6 +30,18 @@ export default function AppRoutes() {
             </PrivateRoute>
           }
         />
+        <Route
+  element={
+    <PrivateRoute>
+      <MainLayout />
+    </PrivateRoute>
+  }
+>
+  <Route
+    path="/employees"
+    element={<EmployeesPage />}
+  />
+</Route>
 
       </Routes>
     </BrowserRouter>

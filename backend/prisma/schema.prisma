@@ -25,6 +25,10 @@ model User {
   role      Role     @default(EMPLOYEE)
   active    Boolean  @default(true)
 
+  phone       String?
+  position    String?
+  hourlyRate  Float?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
