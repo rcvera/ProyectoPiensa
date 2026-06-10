@@ -1,0 +1,94 @@
+/* Fondo principal */
+
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: linear-gradient(
+    135deg,
+    #001529 0%,
+    #003a70 50%,
+    #1677ff 100%
+  );
+
+  padding: 20px;
+}
+
+/* Tarjeta */
+
+.login-card {
+  width: 100%;
+  max-width: 430px;
+
+  border-radius: 18px !important;
+
+  box-shadow:
+    0 15px 35px rgba(0, 0, 0, 0.15),
+    0 5px 15px rgba(0, 0, 0, 0.1);
+
+  overflow: hidden;
+}
+
+/* Encabezado */
+
+.login-header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.login-logo {
+  font-size: 50px;
+  margin-bottom: 10px;
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #001529;
+  margin-bottom: 5px;
+}
+
+.login-subtitle {
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+/* Inputs */
+
+.ant-input,
+.ant-input-password {
+  height: 45px;
+  border-radius: 8px;
+}
+
+/* Botón */
+
+.login-button {
+  height: 45px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Footer */
+
+.login-footer {
+  text-align: center;
+  margin-top: 20px;
+  color: #999;
+  font-size: 13px;
+}
+
+/* Responsive */
+
+@media (max-width: 576px) {
+  .login-card {
+    max-width: 100%;
+  }
+
+  .login-title {
+    font-size: 24px;
+  }
+}
