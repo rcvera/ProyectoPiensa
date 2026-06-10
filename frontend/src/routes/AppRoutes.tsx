@@ -6,6 +6,8 @@ import {
 } from "react-router-dom";
 
 import LoginPage from "../pages/LoginPage";
+import EmployeesPage from "../pages/Employees/EmployeesPage";
+import MainLayout from "../layouts/MainLayout";
 
 function DashboardPage() {
   return <div>Dashboard</div>;
@@ -38,7 +40,18 @@ export default function AppRoutes() {
             </PrivateRoute>
           }
         />
-
+        <Route
+         element={
+         <PrivateRoute>
+          <MainLayout />
+         </PrivateRoute>
+  }
+>
+        <Route
+         path="/employees"
+         element={<EmployeesPage />}
+  />
+</Route>
       </Routes>
     </BrowserRouter>
   );
