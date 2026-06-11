@@ -7,6 +7,7 @@ import {
   UserOutlined,
   TeamOutlined,
   ScheduleOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 
 import { Outlet } from "react-router-dom";
@@ -58,7 +59,12 @@ export default function MainLayout() {
             key: "/assignments",
             icon: <ScheduleOutlined />,
             label: "Asignaciones",
-            }
+            },
+            {
+            key: "/attendances",
+            icon: <ClockCircleOutlined />,
+             label: "Marcaciones",
+                },
           ]}
         />
       </Sider>

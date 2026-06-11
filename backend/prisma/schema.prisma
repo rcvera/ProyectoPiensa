@@ -18,18 +18,22 @@ enum Role {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  name       String
-  email      String   @unique
-  password   String
-  role       Role     @default(EMPLOYEE)
 
-  active     Boolean  @default(true)
+  id         String @id @default(uuid())
+
+  name       String
+  email      String @unique
+  password   String
+
+  role       Role @default(EMPLOYEE)
+
+  active     Boolean @default(true)
 
   phone      String?
   position   String?
 
   assignments Assignment[]
+  attendances Attendance[]
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -61,4 +65,18 @@ model Assignment {
 
   user        User @relation(fields: [userId], references: [id])
   shift       Shift @relation(fields: [shiftId], references: [id])
+}
+model Attendance {
+
+  id          String   @id @default(uuid())
+
+  userId      String
+
+  checkIn     DateTime
+
+  checkOut    DateTime?
+
+  createdAt   DateTime @default(now())
+
+  user        User @relation(fields: [userId], references: [id])
 }
