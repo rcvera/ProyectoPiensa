@@ -48,7 +48,11 @@ export default function MainLayout() {
               key: "3",
               icon: <ScheduleOutlined />,
               label: "Turnos",
-            },
+            },{
+            key: "/shifts",
+            icon: <ScheduleOutlined />,
+            label: "Turnos",
+            }
           ]}
         />
       </Sider>
