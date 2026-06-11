@@ -18,33 +18,47 @@ enum Role {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(EMPLOYEE)
-  active    Boolean  @default(true)
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  role       Role     @default(EMPLOYEE)
 
-  phone       String?
-  position    String?
-  hourlyRate  Float?
+  active     Boolean  @default(true)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  phone      String?
+  position   String?
+
+  assignments Assignment[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
+
 model Shift {
   id          String   @id @default(uuid())
 
   name        String
-
   startTime   String
-
   endTime     String
-
   days        String
 
-  active      Boolean @default(true)
+  active      Boolean  @default(true)
+
+  assignments Assignment[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+
+  userId      String
+  shiftId     String
+
+  assignedAt  DateTime @default(now())
+
+  user        User @relation(fields: [userId], references: [id])
+  shift       Shift @relation(fields: [shiftId], references: [id])
 }
