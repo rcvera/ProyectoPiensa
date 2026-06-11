@@ -13,6 +13,7 @@ import EmployeesPage from "../pages/Employees/EmployeesPage";
 import MainLayout from "../layouts/MainLayout";
 import ShiftsPage from "../pages/Shifts/ShiftsPage";
 import AssignmentsPage from "../pages/Assignments/AssignmentsPage";
+import AttendancesPage from "../pages/Attendances/AttendancesPage";
 
 export default function AppRoutes() {
   return (
@@ -50,6 +51,10 @@ export default function AppRoutes() {
   <Route
     path="/assignments"
     element={<AssignmentsPage />}
+  />
+  <Route
+    path="/attendances"
+    element={<AttendancesPage />}
   />
 </Route>
 
