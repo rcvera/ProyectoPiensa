@@ -7,15 +7,18 @@ import { UsersModule } from './users/users.module';
 import { ShiftsModule } from './shifts/shifts.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { AttendancesModule } from './attendances/attendances.module';
+import { OvertimesModule } from './overtimes/overtimes.module';
 
 @Module({
   imports: [
     AuthModule,
-    PrismaModule, 
+    PrismaModule,
+    OvertimesModule, 
     UsersModule,
     ShiftsModule,
     AssignmentsModule,
     AttendancesModule,
+    
   ],
   controllers: [AppController],
   providers: [AppService],
