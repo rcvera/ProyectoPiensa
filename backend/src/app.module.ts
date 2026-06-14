@@ -8,6 +8,8 @@ import { ShiftsModule } from './shifts/shifts.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { AttendancesModule } from './attendances/attendances.module';
 import { OvertimesModule } from './overtimes/overtimes.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+
 
 @Module({
   imports: [
@@ -18,6 +20,7 @@ import { OvertimesModule } from './overtimes/overtimes.module';
     ShiftsModule,
     AssignmentsModule,
     AttendancesModule,
+    DashboardModule,
     
   ],
   controllers: [AppController],

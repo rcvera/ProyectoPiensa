@@ -8,6 +8,7 @@ import {
   TeamOutlined,
   ScheduleOutlined,
   ClockCircleOutlined,
+  DashboardOutlined,
 } from "@ant-design/icons";
 
 import { Outlet } from "react-router-dom";
@@ -69,6 +70,11 @@ export default function MainLayout() {
             key:"/overtimes",
             icon:<ClockCircleOutlined />,
             label:"Horas Extras",
+            },
+            {
+            key: "/dashboard",
+            icon: <DashboardOutlined />,
+            label: "Dashboard",
             },
           ]}
         />
