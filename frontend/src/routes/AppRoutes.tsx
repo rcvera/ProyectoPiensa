@@ -15,6 +15,7 @@ import ShiftsPage from "../pages/Shifts/ShiftsPage";
 import AssignmentsPage from "../pages/Assignments/AssignmentsPage";
 import AttendancesPage from "../pages/Attendances/AttendancesPage";
 import OvertimesPage from "../pages/Overtimes/OvertimesPage";
+import ReportsPage from "../pages/Reports/ReportsPage";
 
 export default function AppRoutes() {
   return (
@@ -60,6 +61,10 @@ export default function AppRoutes() {
   <Route
     path="/overtimes"
     element={<OvertimesPage />}
+  />
+  <Route
+    path="/reports"
+    element={<ReportsPage />}
   />
 </Route>
 
