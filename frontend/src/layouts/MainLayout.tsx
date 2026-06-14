@@ -65,6 +65,11 @@ export default function MainLayout() {
             icon: <ClockCircleOutlined />,
              label: "Marcaciones",
                 },
+            {
+            key:"/overtimes",
+            icon:<ClockCircleOutlined />,
+            label:"Horas Extras",
+            },
           ]}
         />
       </Sider>

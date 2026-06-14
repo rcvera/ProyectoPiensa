@@ -1,0 +1,18 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { OvertimesController } from './overtimes.controller';
+
+describe('OvertimesController', () => {
+  let controller: OvertimesController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [OvertimesController],
+    }).compile();
+
+    controller = module.get<OvertimesController>(OvertimesController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
