@@ -1,34 +1,33 @@
-.dashboard-container {
-  min-height: 100vh;
-  background: #f5f7fa;
+body {
+  background: #0b1120;
 }
 
-.dashboard-header {
-  background: white;
-  padding: 0 25px;
-
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+.ant-card {
+  border-radius: 15px;
+  box-shadow:
+    0 4px 15px
+    rgba(0, 0, 0, 0.08);
 }
 
-.dashboard-content {
-  padding: 24px;
-}
-
-.welcome-card {
-  border-radius: 12px;
-}
-
-.stats-card {
-  border-radius: 12px;
+.ant-statistic {
   text-align: center;
 }
 
-.stat-number {
+.ant-statistic-content {
   font-size: 28px;
-  font-weight: bold;
-  color: #1677ff;
+}
+
+.stats-card {
+  transition: 0.3s;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
 }
