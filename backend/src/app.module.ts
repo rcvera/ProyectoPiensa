@@ -9,6 +9,7 @@ import { AssignmentsModule } from './assignments/assignments.module';
 import { AttendancesModule } from './attendances/attendances.module';
 import { OvertimesModule } from './overtimes/overtimes.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ReportsModule } from './reports/reports.module';
 
 
 @Module({
@@ -21,6 +22,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AssignmentsModule,
     AttendancesModule,
     DashboardModule,
+    ReportsModule,
     
   ],
   controllers: [AppController],

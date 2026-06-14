@@ -9,6 +9,7 @@ import {
   ScheduleOutlined,
   ClockCircleOutlined,
   DashboardOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 
 import { Outlet } from "react-router-dom";
@@ -75,6 +76,11 @@ export default function MainLayout() {
             key: "/dashboard",
             icon: <DashboardOutlined />,
             label: "Dashboard",
+            },
+            {
+            key:"/reports",
+            icon:<FileTextOutlined />,
+            label:"Reportes",
             },
           ]}
         />
