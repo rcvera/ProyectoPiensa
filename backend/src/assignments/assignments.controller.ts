@@ -8,6 +8,7 @@ import {
 import { AssignmentsService } from './assignments.service';
 
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @Controller('assignments')
 export class AssignmentsController {
@@ -16,7 +17,7 @@ export class AssignmentsController {
     private readonly assignmentsService:
       AssignmentsService,
   ) {}
-
+  @Roles('ADMIN')
   @Post()
   create(
     @Body()
