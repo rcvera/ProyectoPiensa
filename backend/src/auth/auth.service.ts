@@ -16,17 +16,23 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({
+async login(email: string, password: string) {
+  console.log('================');
+  console.log('EMAIL:', email);
+  console.log('PASSWORD:', password);
+
+  const user =
+    await this.prisma.user.findUnique({
       where: { email },
     });
 
-    if (!user) {
-      throw new UnauthorizedException(
-        'Credenciales incorrectas',
-      );
-    }
+  console.log('USER:', user);
 
+  if (!user) {
+    throw new UnauthorizedException(
+      'Credenciales incorrectas',
+    );
+  }
     const isValid = await bcrypt.compare(
       password,
       user.password,

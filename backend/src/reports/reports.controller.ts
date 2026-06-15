@@ -2,12 +2,20 @@ import {
   Controller,
   Get,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 
 import type { Response } from 'express';
 
-import { ReportsService }
-from './reports.service';
+import { ReportsService } from './reports.service';
+
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+@UseGuards(
+  JwtAuthGuard,
+  RolesGuard,
+)
 
 @Controller('reports')
 export class ReportsController {
@@ -16,7 +24,7 @@ export class ReportsController {
     private readonly reportsService:
       ReportsService,
   ) {}
-
+  @Roles('ADMIN')
   @Get('employees/pdf')
   async employeesPDF(
     @Res() res: Response,
@@ -35,7 +43,7 @@ export class ReportsController {
 
     res.send(pdf);
   }
-
+  @Roles('ADMIN')
   @Get('employees/excel')
   async employeesExcel(
     @Res() res: Response,
@@ -55,6 +63,7 @@ export class ReportsController {
     res.send(excel);
   }
 
+  @Roles('ADMIN')
   @Get('overtimes/pdf')
   async overtimePDF(
     @Res() res: Response,
@@ -74,6 +83,7 @@ export class ReportsController {
     res.send(pdf);
   }
 
+  @Roles('ADMIN')
   @Get('overtimes/excel')
   async overtimeExcel(
     @Res() res: Response,

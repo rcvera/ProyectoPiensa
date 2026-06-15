@@ -2,6 +2,7 @@ import {
   Layout,
   Menu,
 } from "antd";
+import type { MenuProps } from "antd";
 
 import {
   UserOutlined,
@@ -14,9 +15,53 @@ import {
 
 import { Outlet } from "react-router-dom";
 
+const user: any = JSON.parse(localStorage.getItem("user") || "{}");
+
 const { Sider, Content } = Layout;
 
 export default function MainLayout() {
+
+  const menuItems: MenuProps["items"] = [
+    {
+      key: "/dashboard",
+      icon: <DashboardOutlined />,
+      label: "Dashboard",
+    },
+    ...(user.role === "ADMIN"
+      ? [
+          {
+            key: "/employees",
+            icon: <TeamOutlined />,
+            label: "Empleados",
+          },
+          {
+            key: "/reports",
+            icon: <FileTextOutlined />,
+            label: "Reportes",
+          },
+        ]
+      : []),
+    {
+      key: "/shifts",
+      icon: <ScheduleOutlined />,
+      label: "Turnos",
+    },
+    {
+      key: "/assignments",
+      icon: <ScheduleOutlined />,
+      label: "Asignaciones",
+    },
+    {
+      key: "/attendances",
+      icon: <ClockCircleOutlined />,
+      label: "Marcaciones",
+    },
+    {
+      key: "/overtimes",
+      icon: <ClockCircleOutlined />,
+      label: "Horas Extras",
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -33,57 +78,7 @@ export default function MainLayout() {
           AutoWash
         </div>
 
-        <Menu
-          theme="dark"
-          mode="inline"
-          items={[
-            {
-              key: "1",
-              icon: <UserOutlined />,
-              label: "Dashboard",
-            },
-            {
-              key: "2",
-              icon: <TeamOutlined />,
-              label: "Empleados",
-            },
-            {
-              key: "3",
-              icon: <ScheduleOutlined />,
-              label: "Turnos",
-            },
-            {
-            key: "/shifts",
-            icon: <ScheduleOutlined />,
-            label: "Turnos",
-            },
-            {
-            key: "/assignments",
-            icon: <ScheduleOutlined />,
-            label: "Asignaciones",
-            },
-            {
-            key: "/attendances",
-            icon: <ClockCircleOutlined />,
-             label: "Marcaciones",
-                },
-            {
-            key:"/overtimes",
-            icon:<ClockCircleOutlined />,
-            label:"Horas Extras",
-            },
-            {
-            key: "/dashboard",
-            icon: <DashboardOutlined />,
-            label: "Dashboard",
-            },
-            {
-            key:"/reports",
-            icon:<FileTextOutlined />,
-            label:"Reportes",
-            },
-          ]}
-        />
+        <Menu theme="dark" mode="inline" items={menuItems} />
       </Sider>
 
       <Content
