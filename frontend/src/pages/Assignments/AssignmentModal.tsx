@@ -2,67 +2,109 @@ import {
   Modal,
   Form,
   Select,
+  DatePicker,
   message,
 } from "antd";
 
-import axios from "axios";
-import { useEffect, useState } from "react";
+import { api } from "../../services/auth.service";
+import { useEffect } from "react";
+import dayjs, { Dayjs } from "dayjs";
+
+interface AssignmentModalProps {
+  open: boolean;
+  onClose: () => void;
+  reload: () => void;
+  users: any[];
+  shifts: any[];
+  prefilledUserId?: string;
+  prefilledDate?: string;
+  currentShiftId?: string;
+}
 
 export default function AssignmentModal({
   open,
   onClose,
   reload,
-}: any) {
+  users,
+  shifts,
+  prefilledUserId,
+  prefilledDate,
+  currentShiftId,
+}: AssignmentModalProps) {
 
   const [form] = Form.useForm();
 
-  const [users, setUsers] =
-    useState([]);
-
-  const [shifts, setShifts] =
-    useState([]);
-
   useEffect(() => {
-
-    axios
-      .get("http://localhost:3000/users")
-      .then((r) =>
-        setUsers(r.data)
-      );
-
-    axios
-      .get("http://localhost:3000/shifts")
-      .then((r) =>
-        setShifts(r.data)
-      );
-
-  }, []);
+    if (open) {
+      form.setFieldsValue({
+        userId: prefilledUserId,
+        date: prefilledDate
+          ? dayjs(prefilledDate)
+          : dayjs(),
+        shiftId: currentShiftId,
+      });
+    }
+  }, [
+    open,
+    prefilledUserId,
+    prefilledDate,
+    currentShiftId,
+  ]);
 
   const save = async () => {
 
-    const values =
-      await form.validateFields();
+    try {
 
-    await axios.post(
-      "http://localhost:3000/assignments",
-      values
-    );
+      const values =
+        await form.validateFields();
 
-    message.success(
-      "Turno asignado"
-    );
+      await api.post(
+        "/assignments",
+        {
+          userId: values.userId,
+          shiftId: values.shiftId,
+          date: (values.date as Dayjs).format(
+            "YYYY-MM-DD",
+          ),
+        },
+      );
 
-    reload();
+      message.success(
+        "Turno asignado",
+      );
 
-    onClose();
+      reload();
+      form.resetFields();
+      onClose();
+
+    } catch (err: any) {
+      if (err?.response?.data?.message) {
+        message.error(
+          err.response.data.message,
+        );
+      } else if (err?.errorFields) {
+        // form validation error already shown
+      } else {
+        message.error(
+          "Error al guardar",
+        );
+      }
+    }
   };
 
   return (
     <Modal
-      title="Asignar Turno"
+      title={
+        currentShiftId
+          ? "Cambiar Turno"
+          : "Asignar Turno"
+      }
       open={open}
       onOk={save}
-      onCancel={onClose}
+      onCancel={() => {
+        form.resetFields();
+        onClose();
+      }}
     >
       <Form form={form} layout="vertical">
 
@@ -70,16 +112,31 @@ export default function AssignmentModal({
           label="Empleado"
           name="userId"
           rules={[
-            { required: true }
+            { required: true },
           ]}
         >
           <Select
+            disabled={!!prefilledUserId}
             options={users.map(
               (u: any) => ({
                 label: u.name,
                 value: u.id,
-              })
+              }),
             )}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Día"
+          name="date"
+          rules={[
+            { required: true },
+          ]}
+        >
+          <DatePicker
+            disabled={!!prefilledDate}
+            style={{ width: "100%" }}
+            format="DD/MM/YYYY"
           />
         </Form.Item>
 
@@ -87,15 +144,19 @@ export default function AssignmentModal({
           label="Turno"
           name="shiftId"
           rules={[
-            { required: true }
+            { required: true },
           ]}
         >
           <Select
             options={shifts.map(
               (s: any) => ({
-                label: s.name,
+                label:
+                  s.startTime &&
+                  s.endTime
+                    ? `${s.name} (${s.startTime} - ${s.endTime})`
+                    : `${s.name} (sin horario)`,
                 value: s.id,
-              })
+              }),
             )}
           />
         </Form.Item>

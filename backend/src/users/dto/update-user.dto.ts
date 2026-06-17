@@ -3,27 +3,38 @@ import {
   IsString,
   IsOptional,
   IsIn,
+  IsBoolean,
   MinLength,
 } from 'class-validator';
 
-export class CreateUserDto {
+export class UpdateUserDto {
+
+  @IsOptional()
   @IsString()
-  name!: string;
+  name?: string;
 
+  @IsOptional()
   @IsEmail()
-  email!: string;
+  email?: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(6)
-  password!: string;
+  password?: string;
 
   @IsOptional()
   @IsIn(['ADMIN', 'SUPERVISOR', 'EMPLOYEE'])
   role?: 'ADMIN' | 'SUPERVISOR' | 'EMPLOYEE';
 
   @IsOptional()
+  @IsString()
   phone?: string;
 
   @IsOptional()
+  @IsString()
   position?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
 }

@@ -2,58 +2,156 @@ import {
   Modal,
   Form,
   Input,
+  Select,
   message,
 } from "antd";
 
-import axios from "axios";
+import { useEffect } from "react";
+
+import { api } from "../../services/auth.service";
+
+interface EmployeeModalProps {
+  open: boolean;
+  onClose: () => void;
+  reload: () => void;
+  employee?: any | null;
+}
 
 export default function EmployeeModal({
   open,
   onClose,
   reload,
-}: any) {
+  employee,
+}: EmployeeModalProps) {
 
   const [form] = Form.useForm();
 
-  const save =
-    async () => {
+  const isEdit = !!employee;
 
-      try {
+  useEffect(() => {
+    if (open) {
+      if (employee) {
+        form.setFieldsValue({
+          name: employee.name,
+          email: employee.email,
+          role: employee.role,
+          phone: employee.phone,
+          position: employee.position,
+        });
+      } else {
+        form.resetFields();
+        form.setFieldsValue({
+          role: "EMPLOYEE",
+        });
+      }
+    }
+  }, [open, employee]);
 
-        const values =
-          await form.validateFields();
+  const save = async () => {
 
-        await axios.post(
-          "http://localhost:3000/users",
-          values
+    try {
+
+      const values =
+        await form.validateFields();
+
+      if (isEdit) {
+
+        const payload: any = {
+          name: values.name,
+          email: values.email,
+          role: values.role,
+          phone: values.phone,
+          position: values.position,
+        };
+
+        if (values.password) {
+          payload.password = values.password;
+        }
+
+        await api.patch(
+          `/users/${employee.id}`,
+          payload,
         );
 
         message.success(
-          "Empleado creado"
+          "Empleado actualizado",
         );
 
-        reload();
+      } else {
 
-        form.resetFields();
+        await api.post(
+          "/users",
+          values,
+        );
 
-        onClose();
-
-      } catch (error) {
-
-        message.error(
-          "Error al guardar"
+        message.success(
+          "Empleado creado",
         );
       }
-    };
+
+      reload();
+      form.resetFields();
+      onClose();
+
+    } catch (error: any) {
+
+      if (error?.errorFields) {
+        return;
+      }
+
+      const status =
+        error?.response?.status;
+
+      const msg =
+        error?.response?.data?.message;
+
+      if (status === 401) {
+        message.error(
+          "No autorizado. Iniciá sesión de nuevo.",
+        );
+      } else if (status === 403) {
+        message.error(
+          "Solo el administrador puede gestionar empleados.",
+        );
+      } else if (status === 409) {
+        message.error(
+          "Ese correo ya está registrado.",
+        );
+      } else if (status === 404) {
+        message.error(
+          "Empleado no encontrado.",
+        );
+      } else if (Array.isArray(msg)) {
+        message.error(msg.join(" · "));
+      } else {
+        message.error(
+          msg || "Error al guardar",
+        );
+      }
+    }
+  };
 
   return (
     <Modal
-      title="Nuevo Empleado"
+      title={
+        isEdit
+          ? "Editar Empleado"
+          : "Nuevo Empleado"
+      }
       open={open}
       onOk={save}
-      onCancel={onClose}
+      onCancel={() => {
+        form.resetFields();
+        onClose();
+      }}
+      okText={
+        isEdit ? "Guardar" : "Crear"
+      }
     >
-      <Form form={form} layout="vertical">
+      <Form
+        form={form}
+        layout="vertical"
+      >
 
         <Form.Item
           label="Nombre"
@@ -61,6 +159,7 @@ export default function EmployeeModal({
           rules={[
             {
               required: true,
+              message: "El nombre es obligatorio",
             },
           ]}
         >
@@ -73,6 +172,11 @@ export default function EmployeeModal({
           rules={[
             {
               required: true,
+              message: "El correo es obligatorio",
+            },
+            {
+              type: "email",
+              message: "Correo inválido",
             },
           ]}
         >
@@ -80,15 +184,67 @@ export default function EmployeeModal({
         </Form.Item>
 
         <Form.Item
-          label="Contraseña"
+          label={
+            isEdit
+              ? "Nueva contraseña (opcional)"
+              : "Contraseña"
+          }
           name="password"
+          rules={
+            isEdit
+              ? [
+                  {
+                    min: 6,
+                    message:
+                      "Mínimo 6 caracteres",
+                  },
+                ]
+              : [
+                  {
+                    required: true,
+                    message:
+                      "La contraseña es obligatoria",
+                  },
+                  {
+                    min: 6,
+                    message:
+                      "Mínimo 6 caracteres",
+                  },
+                ]
+          }
+        >
+          <Input.Password
+            placeholder={
+              isEdit
+                ? "Dejar vacío para no cambiar"
+                : ""
+            }
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Rol"
+          name="role"
           rules={[
-            {
-              required: true,
-            },
+            { required: true },
           ]}
         >
-          <Input.Password />
+          <Select
+            options={[
+              {
+                value: "EMPLOYEE",
+                label: "Empleado",
+              },
+              {
+                value: "SUPERVISOR",
+                label: "Supervisor",
+              },
+              {
+                value: "ADMIN",
+                label: "Administrador",
+              },
+            ]}
+          />
         </Form.Item>
 
         <Form.Item

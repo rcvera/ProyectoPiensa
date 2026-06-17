@@ -1,12 +1,14 @@
 import {
   IsString,
   IsOptional,
+  IsBoolean,
 } from 'class-validator';
 
-export class CreateShiftDto {
+export class UpdateShiftDto {
 
+  @IsOptional()
   @IsString()
-  name!: string;
+  name?: string;
 
   @IsOptional()
   @IsString()
@@ -15,4 +17,8 @@ export class CreateShiftDto {
   @IsOptional()
   @IsString()
   endTime?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
 }

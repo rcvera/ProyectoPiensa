@@ -5,9 +5,13 @@ import { AssignmentsController } from './assignments.controller';
 import { AssignmentsService } from './assignments.service';
 
 import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [
+    PrismaModule,
+    NotificationsModule,
+  ],
   controllers: [AssignmentsController],
   providers: [AssignmentsService],
 })
