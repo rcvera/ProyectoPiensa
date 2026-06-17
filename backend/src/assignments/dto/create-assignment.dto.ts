@@ -1,5 +1,6 @@
 import {
   IsString,
+  IsDateString,
 } from 'class-validator';
 
 export class CreateAssignmentDto {
@@ -9,4 +10,7 @@ export class CreateAssignmentDto {
 
   @IsString()
   shiftId!: string;
+
+  @IsDateString()
+  date!: string;
 }

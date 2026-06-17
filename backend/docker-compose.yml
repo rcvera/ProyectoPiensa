@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: piensa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ProyectPiensa
+    ports:
+      - "5434:5432"
+    volumes:
+      - piensa_pgdata:/var/lib/postgresql
+      - ../ProyectPiensa.sql:/tmp/dump.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ProyectPiensa"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  piensa_pgdata:

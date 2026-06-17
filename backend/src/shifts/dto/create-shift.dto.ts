@@ -1,5 +1,6 @@
 import {
-  IsString
+  IsString,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateShiftDto {
@@ -7,12 +8,11 @@ export class CreateShiftDto {
   @IsString()
   name!: string;
 
+  @IsOptional()
   @IsString()
-  startTime!: string;
+  startTime?: string;
 
+  @IsOptional()
   @IsString()
-  endTime!: string;
-
-  @IsString()
-  days!: string;
+  endTime?: string;
 }

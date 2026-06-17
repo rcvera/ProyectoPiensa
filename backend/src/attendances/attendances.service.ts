@@ -5,6 +5,7 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { OvertimesService } from '../overtimes/overtimes.service';
+
 @Injectable()
 export class AttendancesService {
 
@@ -27,7 +28,7 @@ export class AttendancesService {
 
     if (openAttendance) {
       throw new BadRequestException(
-        'Ya existe una entrada activa'
+        'Ya existe una entrada activa',
       );
     }
 
@@ -39,48 +40,167 @@ export class AttendancesService {
     });
   }
 
-  async checkOut(
-  userId: string,
-) {
+  async breakStart(
+    userId: string,
+  ) {
 
-  const attendance =
-    await this.prisma.attendance.findFirst({
-      where: {
-        userId,
-        checkOut: null,
+    const attendance =
+      await this.prisma.attendance.findFirst({
+        where: {
+          userId,
+          checkOut: null,
+        },
+      });
+
+    if (!attendance) {
+      throw new BadRequestException(
+        'No hay entrada activa para iniciar el almuerzo',
+      );
+    }
+
+    if (attendance.breakStart) {
+      throw new BadRequestException(
+        'Ya marcaste salida al almuerzo',
+      );
+    }
+
+    return this.prisma.attendance.update({
+      where: { id: attendance.id },
+      data: {
+        breakStart: new Date(),
       },
     });
-
-  if (!attendance) {
-    throw new BadRequestException(
-      'No existe entrada registrada'
-    );
   }
 
-  const updated =
-    await this.prisma.attendance.update({
-      where: {
-        id: attendance.id,
-      },
+  async breakEnd(
+    userId: string,
+  ) {
+
+    const attendance =
+      await this.prisma.attendance.findFirst({
+        where: {
+          userId,
+          checkOut: null,
+        },
+      });
+
+    if (!attendance) {
+      throw new BadRequestException(
+        'No hay entrada activa',
+      );
+    }
+
+    if (!attendance.breakStart) {
+      throw new BadRequestException(
+        'No iniciaste el almuerzo',
+      );
+    }
+
+    if (attendance.breakEnd) {
+      throw new BadRequestException(
+        'Ya marcaste vuelta del almuerzo',
+      );
+    }
+
+    return this.prisma.attendance.update({
+      where: { id: attendance.id },
       data: {
-        checkOut: new Date(),
+        breakEnd: new Date(),
       },
     });
+  }
 
-  await this.overtimesService.generateOvertime(
-    updated.id,
-  );
+  async checkOut(
+    userId: string,
+  ) {
 
-  return updated;
-}
+    const attendance =
+      await this.prisma.attendance.findFirst({
+        where: {
+          userId,
+          checkOut: null,
+        },
+      });
 
-  async history() {
+    if (!attendance) {
+      throw new BadRequestException(
+        'No existe entrada registrada',
+      );
+    }
+
+    if (
+      attendance.breakStart &&
+      !attendance.breakEnd
+    ) {
+      throw new BadRequestException(
+        'Tenés que marcar la vuelta del almuerzo antes de salir',
+      );
+    }
+
+    const updated =
+      await this.prisma.attendance.update({
+        where: {
+          id: attendance.id,
+        },
+        data: {
+          checkOut: new Date(),
+        },
+      });
+
+    await this.overtimesService.generateOvertime(
+      updated.id,
+    );
+
+    return updated;
+  }
+
+  async findAll(
+    userId?: string,
+    from?: string,
+    to?: string,
+  ) {
+
+    const where: any = {};
+
+    if (userId) {
+      where.userId = userId;
+    }
+
+    if (from || to) {
+      where.checkIn = {};
+      if (from) where.checkIn.gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999);
+        where.checkIn.lte = toDate;
+      }
+    }
+
     return this.prisma.attendance.findMany({
+      where,
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            position: true,
+          },
+        },
       },
       orderBy: {
         checkIn: 'desc',
+      },
+    });
+  }
+
+  async findOpenForUser(
+    userId: string,
+  ) {
+    return this.prisma.attendance.findFirst({
+      where: {
+        userId,
+        checkOut: null,
       },
     });
   }

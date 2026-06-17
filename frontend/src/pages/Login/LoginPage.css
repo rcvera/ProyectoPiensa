@@ -55,10 +55,10 @@
   font-size: 14px;
 }
 
-/* Inputs */
+/* Inputs (scoped al login) */
 
-.ant-input,
-.ant-input-password {
+.login-card .ant-input,
+.login-card .ant-input-password {
   height: 45px;
   border-radius: 8px;
 }
