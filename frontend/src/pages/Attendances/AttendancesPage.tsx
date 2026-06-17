@@ -1,140 +1,254 @@
 import {
   Card,
-  Button,
   Select,
   Table,
-  message,
+  DatePicker,
+  Space,
+  Tag,
+  Button,
+  Typography,
 } from "antd";
+
+import {
+  ReloadOutlined,
+} from "@ant-design/icons";
 
 import {
   useEffect,
   useState,
 } from "react";
 
-import axios from "axios";
+import dayjs, { Dayjs } from "dayjs";
+
+import { api } from "../../services/auth.service";
+
+import "./AttendancesPage.css";
+
+const { RangePicker } = DatePicker;
+const { Text } = Typography;
+
+const formatDateTime = (
+  v: string | null,
+): string => {
+  if (!v) return "—";
+  return dayjs(v).format(
+    "DD/MM/YYYY HH:mm",
+  );
+};
+
+const formatTime = (
+  v: string | null,
+): string => {
+  if (!v) return "—";
+  return dayjs(v).format("HH:mm");
+};
+
+const computeDuration = (
+  checkIn: string,
+  breakStart: string | null,
+  breakEnd: string | null,
+  checkOut: string | null,
+): string => {
+  if (!checkOut) return "En curso";
+  let mins = dayjs(checkOut).diff(
+    dayjs(checkIn),
+    "minute",
+  );
+  if (breakStart && breakEnd) {
+    mins -= dayjs(breakEnd).diff(
+      dayjs(breakStart),
+      "minute",
+    );
+  }
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}h ${m}m`;
+};
 
 export default function AttendancesPage() {
 
   const [users, setUsers] =
-    useState([]);
+    useState<any[]>([]);
 
   const [userId, setUserId] =
-    useState("");
+    useState<string | undefined>();
 
-  const [history, setHistory] =
-    useState([]);
+  const [range, setRange] = useState<
+    [Dayjs | null, Dayjs | null] | null
+  >(null);
 
-  const loadHistory =
-    async () => {
+  const [data, setData] = useState<
+    any[]
+  >([]);
 
-      const response =
-        await axios.get(
-          "http://localhost:3000/attendances"
-        );
+  const [loading, setLoading] =
+    useState(false);
 
-      setHistory(
-        response.data
+  const load = async () => {
+    try {
+      setLoading(true);
+      const params: any = {};
+      if (userId)
+        params.userId = userId;
+      if (range?.[0])
+        params.from =
+          range[0].format("YYYY-MM-DD");
+      if (range?.[1])
+        params.to =
+          range[1].format("YYYY-MM-DD");
+      const r = await api.get(
+        "/attendances",
+        { params },
       );
-    };
+      setData(r.data || []);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-
-    axios
-      .get("http://localhost:3000/users")
+    api
+      .get("/users")
       .then((r) =>
-        setUsers(r.data)
+        setUsers(r.data || []),
       );
-
-    loadHistory();
-
   }, []);
 
-  const checkIn =
-    async () => {
-
-      await axios.post(
-        "http://localhost:3000/attendances/check-in",
-        { userId }
-      );
-
-      message.success(
-        "Entrada registrada"
-      );
-
-      loadHistory();
-    };
-
-  const checkOut =
-    async () => {
-
-      await axios.post(
-        "http://localhost:3000/attendances/check-out",
-        { userId }
-      );
-
-      message.success(
-        "Salida registrada"
-      );
-
-      loadHistory();
-    };
+  useEffect(() => {
+    load();
+  }, [userId, range]);
 
   return (
-    <Card title="Marcaciones">
+    <Card
+      title="Marcaciones de empleados"
+      extra={
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={load}
+        >
+          Actualizar
+        </Button>
+      }
+    >
 
-      <Select
-        style={{
-          width: 300,
-          marginBottom: 20,
-        }}
-        placeholder="Seleccione empleado"
-        onChange={setUserId}
-        options={users.map(
-          (u: any) => ({
-            label: u.name,
-            value: u.id,
-          })
+      <Space
+        style={{ marginBottom: 16 }}
+        wrap
+      >
+        <Select
+          allowClear
+          placeholder="Filtrar por empleado"
+          style={{ width: 260 }}
+          value={userId}
+          onChange={(v) =>
+            setUserId(v)
+          }
+          options={users.map(
+            (u: any) => ({
+              label: u.name,
+              value: u.id,
+            }),
+          )}
+        />
+
+        <RangePicker
+          format="DD/MM/YYYY"
+          value={range as any}
+          onChange={(v) =>
+            setRange(v as any)
+          }
+        />
+
+        {(userId || range) && (
+          <Button
+            onClick={() => {
+              setUserId(undefined);
+              setRange(null);
+            }}
+          >
+            Limpiar filtros
+          </Button>
         )}
-      />
-
-      <br />
-
-      <Button
-        type="primary"
-        onClick={checkIn}
-      >
-        Registrar Entrada
-      </Button>
-
-      <Button
-        danger
-        style={{
-          marginLeft: 10,
-        }}
-        onClick={checkOut}
-      >
-        Registrar Salida
-      </Button>
+      </Space>
 
       <Table
         rowKey="id"
-        style={{
-          marginTop: 20,
-        }}
-        dataSource={history}
+        loading={loading}
+        dataSource={data}
         columns={[
           {
             title: "Empleado",
-            render: (_: any, r: any) =>
-              r.user.name,
+            render: (
+              _: any,
+              r: any,
+            ) => (
+              <div>
+                <div
+                  style={{
+                    fontWeight: 600,
+                  }}
+                >
+                  {r.user.name}
+                </div>
+                <Text
+                  type="secondary"
+                  style={{
+                    fontSize: 12,
+                  }}
+                >
+                  {r.user.position ||
+                    r.user.email}
+                </Text>
+              </div>
+            ),
           },
           {
             title: "Entrada",
             dataIndex: "checkIn",
+            render: (v: string) =>
+              formatDateTime(v),
+          },
+          {
+            title: "Almuerzo",
+            dataIndex: "breakStart",
+            render: (
+              v: string | null,
+            ) => formatTime(v),
+          },
+          {
+            title: "Vuelta",
+            dataIndex: "breakEnd",
+            render: (
+              v: string | null,
+            ) => formatTime(v),
           },
           {
             title: "Salida",
             dataIndex: "checkOut",
+            render: (
+              v: string | null,
+            ) => formatDateTime(v),
+          },
+          {
+            title: "Trabajado",
+            render: (
+              _: any,
+              r: any,
+            ) => {
+              const d = computeDuration(
+                r.checkIn,
+                r.breakStart,
+                r.breakEnd,
+                r.checkOut,
+              );
+              return r.checkOut ? (
+                <Text>{d}</Text>
+              ) : (
+                <Tag color="orange">
+                  {d}
+                </Tag>
+              );
+            },
           },
         ]}
       />

@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import axios from "axios";
+import { API_URL } from "../../api/config";
 
 export default function OvertimesPage() {
 
@@ -20,7 +21,7 @@ export default function OvertimesPage() {
 
     axios
       .get(
-        "http://localhost:3000/overtimes"
+        `${API_URL}/overtimes`
       )
       .then((r) =>
         setData(r.data)

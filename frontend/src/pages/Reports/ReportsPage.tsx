@@ -10,6 +10,7 @@ import {
   FileExcelOutlined,
 } from "@ant-design/icons";
 
+import { API_URL } from "../../api/config";
 import "./ReportsPage.css";
 
 export default function ReportsPage() {
@@ -37,7 +38,7 @@ export default function ReportsPage() {
               block
               onClick={() =>
                 download(
-                  "http://localhost:3000/reports/employees/pdf",
+                  `${API_URL}/reports/employees/pdf`,
                 )
               }
             >
@@ -54,7 +55,7 @@ export default function ReportsPage() {
               block
               onClick={() =>
                 download(
-                  "http://localhost:3000/reports/employees/excel",
+                  `${API_URL}/reports/employees/excel`,
                 )
               }
             >
@@ -74,7 +75,7 @@ export default function ReportsPage() {
               block
               onClick={() =>
                 download(
-                  "http://localhost:3000/reports/overtimes/pdf",
+                  `${API_URL}/reports/overtimes/pdf`,
                 )
               }
             >
@@ -91,7 +92,7 @@ export default function ReportsPage() {
               block
               onClick={() =>
                 download(
-                  "http://localhost:3000/reports/overtimes/excel",
+                  `${API_URL}/reports/overtimes/excel`,
                 )
               }
             >
