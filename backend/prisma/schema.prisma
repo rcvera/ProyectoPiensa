@@ -14,7 +14,22 @@ datasource db {
 
 enum Role {
   ADMIN
+  SUPERVISOR
   EMPLOYEE
+}
+
+enum IncidentType {
+  ACCIDENTE
+  DANO_VEHICULO
+  FALTA_INSUMO
+  CONFLICTO
+  OTRO
+}
+
+enum IncidentStatus {
+  PENDIENTE
+  REVISADO
+  CERRADO
 }
 
 model User {
@@ -31,9 +46,12 @@ model User {
   phone    String?
   position String?
 
-  assignments Assignment[]
-  attendances Attendance[]
-  overtimes   Overtime[]
+  assignments    Assignment[]
+  attendances    Attendance[]
+  overtimes      Overtime[]
+  incidents      Incident[]     @relation("EmployeeIncidents")
+  reviewedIncidents Incident[]  @relation("ReviewerIncidents")
+  notifications  Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -43,9 +61,8 @@ model Shift {
   id String @id @default(uuid())
 
   name      String
-  startTime String
-  endTime   String
-  days      String
+  startTime String?
+  endTime   String?
 
   active Boolean @default(true)
 
@@ -61,10 +78,17 @@ model Assignment {
   userId  String
   shiftId String
 
+  date DateTime @db.Date
+
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+
   assignedAt DateTime @default(now())
 
   user  User  @relation(fields: [userId], references: [id])
   shift Shift @relation(fields: [shiftId], references: [id])
+
+  @@unique([userId, date])
 }
 
 model Attendance {
@@ -72,9 +96,10 @@ model Attendance {
 
   userId String
 
-  checkIn DateTime
-
-  checkOut DateTime?
+  checkIn    DateTime
+  breakStart DateTime?
+  breakEnd   DateTime?
+  checkOut   DateTime?
 
   createdAt DateTime @default(now())
 
@@ -101,4 +126,42 @@ model Overtime {
   user User @relation(fields: [userId], references: [id])
 
   attendance Attendance @relation(fields: [attendanceId], references: [id])
+}
+
+model Incident {
+  id String @id @default(uuid())
+
+  userId String
+
+  type        IncidentType
+  description String
+  photoUrl    String?
+
+  status         IncidentStatus @default(PENDIENTE)
+  adminResponse  String?
+  reviewedById   String?
+  reviewedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User           @relation("EmployeeIncidents", fields: [userId], references: [id])
+  reviewedBy   User?          @relation("ReviewerIncidents", fields: [reviewedById], references: [id])
+  notifications Notification[]
+}
+
+model Notification {
+  id String @id @default(uuid())
+
+  userId     String
+  incidentId String?
+
+  title   String
+  message String
+  read    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id])
+  incident Incident? @relation(fields: [incidentId], references: [id])
 }

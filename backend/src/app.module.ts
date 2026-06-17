@@ -10,20 +10,24 @@ import { AttendancesModule } from './attendances/attendances.module';
 import { OvertimesModule } from './overtimes/overtimes.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ReportsModule } from './reports/reports.module';
+import { IncidentsModule } from './incidents/incidents.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 
 @Module({
   imports: [
     AuthModule,
     PrismaModule,
-    OvertimesModule, 
+    OvertimesModule,
     UsersModule,
     ShiftsModule,
     AssignmentsModule,
     AttendancesModule,
     DashboardModule,
     ReportsModule,
-    
+    IncidentsModule,
+    NotificationsModule,
+
   ],
   controllers: [AppController],
   providers: [AppService],

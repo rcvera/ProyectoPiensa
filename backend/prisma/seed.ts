@@ -23,7 +23,42 @@ async function main() {
     },
   });
 
-  console.log('Usuario administrador verificado');
+  await prisma.user.upsert({
+    where: {
+      email: 'supervisor@test.com',
+    },
+    update: {
+      role: 'SUPERVISOR',
+    },
+    create: {
+      name: 'Supervisor',
+      email: 'supervisor@test.com',
+      password,
+      role: 'SUPERVISOR',
+      active: true,
+      position: 'Supervisor de turno',
+    },
+  });
+
+  await prisma.user.upsert({
+    where: {
+      email: 'empleado@test.com',
+    },
+    update: {},
+    create: {
+      name: 'Empleado de prueba',
+      email: 'empleado@test.com',
+      password,
+      role: 'EMPLOYEE',
+      active: true,
+      position: 'Operador',
+    },
+  });
+
+  console.log('Usuarios verificados:');
+  console.log('  admin@test.com      / 123456  (ADMIN)');
+  console.log('  supervisor@test.com / 123456  (SUPERVISOR)');
+  console.log('  empleado@test.com   / 123456  (EMPLOYEE)');
 }
 
 main()
