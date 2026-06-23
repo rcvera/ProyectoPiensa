@@ -17,8 +17,12 @@ const { Title, Text } = Typography;
 type IncidentByDay = { day: string; count: number };
 
 type Stats = {
+  // global (ADMIN / SUPERVISOR)
   employees?: number;
   shifts?: number;
+  // employee-specific
+  assignedShifts?: number;
+  // shared
   attendancesToday?: number;
   incidents?: number;
   incidentsByDay?: IncidentByDay[];
@@ -28,6 +32,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats>({});
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isEmployee = user.role === "EMPLOYEE";
 
   useEffect(() => {
     axios
@@ -44,11 +49,17 @@ export default function DashboardPage() {
   });
   const today = todayRaw.charAt(0).toUpperCase() + todayRaw.slice(1);
 
-  const pieData = [
-    { type: "Empleados", value: stats.employees || 0 },
-    { type: "Turnos", value: stats.shifts || 0 },
-    { type: "Marcaciones", value: stats.attendancesToday || 0 },
-  ];
+  const pieData = isEmployee
+    ? [
+        { type: "Turnos Asignados", value: stats.assignedShifts || 0 },
+        { type: "Marcaciones Hoy", value: stats.attendancesToday || 0 },
+        { type: "Mis Incidentes", value: stats.incidents || 0 },
+      ]
+    : [
+        { type: "Empleados", value: stats.employees || 0 },
+        { type: "Turnos", value: stats.shifts || 0 },
+        { type: "Marcaciones", value: stats.attendancesToday || 0 },
+      ];
 
   const WEEKDAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
   const incidentsByDay = (stats.incidentsByDay ?? []).map((d) => {
@@ -67,45 +78,81 @@ export default function DashboardPage() {
       </div>
 
       <Row gutter={[24, 24]}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stats-card">
-            <Statistic
-              title="Empleados"
-              value={stats.employees || 0}
-              prefix={<TeamOutlined />}
-            />
-          </Card>
-        </Col>
+        {isEmployee ? (
+          <>
+            <Col xs={24} sm={12} lg={8}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Mis Turnos Asignados"
+                  value={stats.assignedShifts || 0}
+                  prefix={<ScheduleOutlined />}
+                />
+              </Card>
+            </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stats-card">
-            <Statistic
-              title="Turnos"
-              value={stats.shifts || 0}
-              prefix={<ScheduleOutlined />}
-            />
-          </Card>
-        </Col>
+            <Col xs={24} sm={12} lg={8}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Mi Marcación Hoy"
+                  value={stats.attendancesToday || 0}
+                  prefix={<UserOutlined />}
+                />
+              </Card>
+            </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stats-card">
-            <Statistic
-              title="Marcaciones Hoy"
-              value={stats.attendancesToday || 0}
-              prefix={<UserOutlined />}
-            />
-          </Card>
-        </Col>
+            <Col xs={24} sm={12} lg={8}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Mis Incidentes"
+                  value={stats.incidents || 0}
+                  prefix={<WarningOutlined />}
+                />
+              </Card>
+            </Col>
+          </>
+        ) : (
+          <>
+            <Col xs={24} sm={12} lg={6}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Empleados"
+                  value={stats.employees || 0}
+                  prefix={<TeamOutlined />}
+                />
+              </Card>
+            </Col>
 
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stats-card">
-            <Statistic
-              title="Incidentes Reportados"
-              value={stats.incidents || 0}
-              prefix={<WarningOutlined />}
-            />
-          </Card>
-        </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Turnos"
+                  value={stats.shifts || 0}
+                  prefix={<ScheduleOutlined />}
+                />
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} lg={6}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Marcaciones Hoy"
+                  value={stats.attendancesToday || 0}
+                  prefix={<UserOutlined />}
+                />
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} lg={6}>
+              <Card className="stats-card">
+                <Statistic
+                  title="Incidentes Reportados"
+                  value={stats.incidents || 0}
+                  prefix={<WarningOutlined />}
+                />
+              </Card>
+            </Col>
+          </>
+        )}
       </Row>
 
       <Row gutter={[24, 24]}>
@@ -151,7 +198,7 @@ export default function DashboardPage() {
         <Col xs={24} lg={12}>
           <Card
             className="dashboard-chart"
-            title="Incidentes de la semana"
+            title={isEmployee ? "Mis incidentes de la semana" : "Incidentes de la semana"}
           >
             <div style={{ height: 340 }}>
               <Column

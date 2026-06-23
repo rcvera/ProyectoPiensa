@@ -1,41 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+interface AuthUser {
+  id: string;
+  role: string;
+}
+
 @Injectable()
 export class DashboardService {
   constructor(
     private prisma: PrismaService,
   ) {}
 
-  async getStats() {
+  async getStats(user: AuthUser) {
+    if (user.role === 'EMPLOYEE') {
+      return this.getEmployeeStats(user.id);
+    }
+    return this.getGlobalStats();
+  }
 
-    const employees =
-      await this.prisma.user.count();
+  private async getGlobalStats() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const shifts =
-      await this.prisma.shift.count();
-
-    const attendancesToday =
-      await this.prisma.attendance.count({
-        where: {
-          checkIn: {
-            gte: new Date(
-              new Date().setHours(
-                0,
-                0,
-                0,
-                0,
-              ),
-            ),
-          },
-        },
-      });
-
-    const incidents =
-      await this.prisma.incident.count();
-
-    const incidentsByDay =
-      await this.getIncidentsThisWeek();
+    const [employees, shifts, attendancesToday, incidents, incidentsByDay] =
+      await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.shift.count(),
+        this.prisma.attendance.count({
+          where: { checkIn: { gte: today } },
+        }),
+        this.prisma.incident.count(),
+        this.getIncidentsThisWeek(),
+      ]);
 
     return {
       employees,
@@ -46,7 +43,33 @@ export class DashboardService {
     };
   }
 
-  private async getIncidentsThisWeek() {
+  private async getEmployeeStats(userId: string) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [assignedShifts, attendancesToday, incidents, incidentsByDay] =
+      await Promise.all([
+        this.prisma.assignment.count({
+          where: { userId },
+        }),
+        this.prisma.attendance.count({
+          where: { userId, checkIn: { gte: today } },
+        }),
+        this.prisma.incident.count({
+          where: { userId },
+        }),
+        this.getIncidentsThisWeek(userId),
+      ]);
+
+    return {
+      assignedShifts,
+      attendancesToday,
+      incidents,
+      incidentsByDay,
+    };
+  }
+
+  private async getIncidentsThisWeek(userId?: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -67,6 +90,7 @@ export class DashboardService {
     const recent =
       await this.prisma.incident.findMany({
         where: {
+          ...(userId ? { userId } : {}),
           createdAt: {
             gte: monday,
             lt: nextMonday,
@@ -75,10 +99,7 @@ export class DashboardService {
         select: { createdAt: true },
       });
 
-    const buckets = new Map<
-      string,
-      number
-    >();
+    const buckets = new Map<string, number>();
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday);
@@ -87,23 +108,15 @@ export class DashboardService {
     }
 
     for (const inc of recent) {
-      const key = this.dayKey(
-        inc.createdAt,
-      );
+      const key = this.dayKey(inc.createdAt);
       if (buckets.has(key)) {
-        buckets.set(
-          key,
-          (buckets.get(key) ?? 0) + 1,
-        );
+        buckets.set(key, (buckets.get(key) ?? 0) + 1);
       }
     }
 
-    return Array.from(
-      buckets.entries(),
-    ).map(([day, count]) => ({
-      day,
-      count,
-    }));
+    return Array.from(buckets.entries()).map(
+      ([day, count]) => ({ day, count }),
+    );
   }
 
   private dayKey(date: Date): string {
