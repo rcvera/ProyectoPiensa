@@ -44,18 +44,27 @@ export default function OvertimesPage() {
           {
             title:"Horas Trabajadas",
             dataIndex:"workedHours",
+            render:(v:number)=>Number(v).toFixed(2),
           },
           {
             title:"Horas Extra",
             render:(_:any,r:any)=>(
               <Tag color="orange">
-                {r.overtimeHours}
+                {Number(r.overtimeHours).toFixed(2)}
               </Tag>
             ),
           },
           {
             title:"Fecha",
             dataIndex:"date",
+            render:(date:string)=>
+              new Date(date).toLocaleDateString("es-CL",{
+                day:"2-digit",
+                month:"2-digit",
+                year:"numeric",
+                hour:"2-digit",
+                minute:"2-digit",
+              }),
           },
         ]}
       />
