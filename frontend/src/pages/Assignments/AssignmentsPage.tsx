@@ -7,6 +7,10 @@ import {
   Popconfirm,
   Typography,
   Badge,
+  Modal,
+  Select,
+  Checkbox,
+  Divider,
   message,
 } from "antd";
 
@@ -18,6 +22,9 @@ import {
   CloudUploadOutlined,
   EditOutlined,
   HolderOutlined,
+  ThunderboltOutlined,
+  CopyOutlined,
+  ClearOutlined,
 } from "@ant-design/icons";
 
 import React, {
@@ -255,6 +262,28 @@ export default function AssignmentsPage() {
   const [publishing, setPublishing] =
     useState(false);
 
+  const [filling, setFilling] =
+    useState(false);
+
+  const [copying, setCopying] =
+    useState(false);
+
+  const [clearing, setClearing] =
+    useState(false);
+
+  const [fillModalOpen, setFillModalOpen] =
+    useState(false);
+
+  const [selectedFillShift, setSelectedFillShift] =
+    useState<string | undefined>();
+
+  const [selectedFillUsers, setSelectedFillUsers] =
+    useState<string[]>([]);
+
+  // ISO weekdays: 1=Lun…7=Dom. Default: Lun–Vie (1–5)
+  const [selectedFillDays, setSelectedFillDays] =
+    useState<number[]>([1, 2, 3, 4, 5]);
+
   const [modalState, setModalState] =
     useState<{
       open: boolean;
@@ -442,6 +471,91 @@ export default function AssignmentsPage() {
     }
   };
 
+  const clearRow = async (userId: string) => {
+    try {
+      const r = await api.post("/assignments/clear-week", {
+        from: weekStart.format("YYYY-MM-DD"),
+        to: weekEnd.format("YYYY-MM-DD"),
+        userIds: [userId],
+      });
+      message.success(`${r.data.deleted} asignaciones eliminadas`);
+      loadAssignments();
+    } catch {
+      message.error("Error al limpiar la fila");
+    }
+  };
+
+  const clearWeek = async () => {
+    try {
+      setClearing(true);
+      const r = await api.post("/assignments/clear-week", {
+        from: weekStart.format("YYYY-MM-DD"),
+        to: weekEnd.format("YYYY-MM-DD"),
+      });
+      message.success(`${r.data.deleted} asignaciones eliminadas`);
+      loadAssignments();
+    } catch {
+      message.error("Error al limpiar la semana");
+    } finally {
+      setClearing(false);
+    }
+  };
+
+  const fillWeek = async () => {
+    if (!selectedFillShift) {
+      message.warning("Seleccioná un turno");
+      return;
+    }
+    if (selectedFillDays.length === 0) {
+      message.warning("Seleccioná al menos un día");
+      return;
+    }
+    try {
+      setFilling(true);
+      const r = await api.post("/assignments/fill-week", {
+        shiftId: selectedFillShift,
+        from: weekStart.format("YYYY-MM-DD"),
+        to: weekEnd.format("YYYY-MM-DD"),
+        userIds: selectedFillUsers.length > 0 ? selectedFillUsers : undefined,
+        isoDays: selectedFillDays,
+      });
+      message.success(
+        `${r.data.created} asignaciones creadas${r.data.skipped > 0 ? `, ${r.data.skipped} ya existían` : ""}`,
+      );
+      setFillModalOpen(false);
+      setSelectedFillShift(undefined);
+      setSelectedFillUsers([]);
+      setSelectedFillDays([1, 2, 3, 4, 5]);
+      loadAssignments();
+    } catch {
+      message.error("Error al rellenar la semana");
+    } finally {
+      setFilling(false);
+    }
+  };
+
+  const copyWeek = async () => {
+    try {
+      setCopying(true);
+      const r = await api.post("/assignments/copy-week", {
+        from: weekStart.format("YYYY-MM-DD"),
+        to: weekEnd.format("YYYY-MM-DD"),
+      });
+      if (r.data.created === 0) {
+        message.info("La semana anterior no tenía asignaciones para copiar");
+      } else {
+        message.success(
+          `${r.data.created} asignaciones copiadas de la semana anterior`,
+        );
+      }
+      loadAssignments();
+    } catch {
+      message.error("Error al copiar la semana");
+    } finally {
+      setCopying(false);
+    }
+  };
+
   const onDragEnd = (
     event: DragEndEvent,
   ) => {
@@ -483,24 +597,37 @@ export default function AssignmentsPage() {
       title: "Empleado",
       dataIndex: "name",
       fixed: "left" as const,
-      width: 180,
-      render: (_: any, r: any) => (
-        <div>
-          <div
-            style={{
-              fontWeight: 600,
-            }}
-          >
-            {r.name}
+      width: 200,
+      render: (_: any, r: any) => {
+        const hasAssignments = assignments.some((a) => a.userId === r.id);
+        return (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+            <div>
+              <div style={{ fontWeight: 600 }}>{r.name}</div>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                {r.position?.name || r.role}
+              </Text>
+            </div>
+            {hasAssignments && (
+              <Popconfirm
+                title={`¿Borrar toda la semana de ${r.name}?`}
+                okText="Borrar"
+                okButtonProps={{ danger: true }}
+                cancelText="No"
+                onConfirm={() => clearRow(r.id)}
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  style={{ flexShrink: 0 }}
+                />
+              </Popconfirm>
+            )}
           </div>
-          <Text
-            type="secondary"
-            style={{ fontSize: 12 }}
-          >
-            {r.position || r.role}
-          </Text>
-        </div>
-      ),
+        );
+      },
     },
     ...days.map((d, idx) => ({
       title: (
@@ -653,7 +780,7 @@ export default function AssignmentsPage() {
           </Space>
         }
         extra={
-          <Space>
+          <Space wrap>
             <Badge
               count={draftCount}
               overflowCount={99}
@@ -668,6 +795,48 @@ export default function AssignmentsPage() {
               · Publicadas:{" "}
               {publishedCount}
             </Text>
+            <Popconfirm
+              title="¿Limpiar toda la semana?"
+              description="Se eliminarán TODAS las asignaciones de la semana visible. Esta acción no se puede deshacer."
+              okText="Limpiar"
+              okButtonProps={{ danger: true }}
+              cancelText="Cancelar"
+              onConfirm={clearWeek}
+            >
+              <Button
+                danger
+                icon={<ClearOutlined />}
+                loading={clearing}
+              >
+                Limpiar semana
+              </Button>
+            </Popconfirm>
+
+            <Popconfirm
+              title="¿Copiar asignaciones de la semana anterior?"
+              description="Se copiarán los turnos de la semana pasada a esta semana. Las celdas con asignación existente no se modificarán."
+              okText="Copiar"
+              cancelText="Cancelar"
+              onConfirm={copyWeek}
+            >
+              <Button
+                icon={<CopyOutlined />}
+                loading={copying}
+              >
+                Copiar semana anterior
+              </Button>
+            </Popconfirm>
+            <Button
+              icon={<ThunderboltOutlined />}
+              onClick={() => {
+                setSelectedFillShift(undefined);
+                setSelectedFillUsers([]);
+                setSelectedFillDays([1, 2, 3, 4, 5]);
+                setFillModalOpen(true);
+              }}
+            >
+              Rellenar semana
+            </Button>
             <Button
               type="primary"
               icon={
@@ -770,6 +939,123 @@ export default function AssignmentsPage() {
           modalState.currentShiftId
         }
       />
+
+      <Modal
+        title={
+          <Space>
+            <ThunderboltOutlined />
+            Rellenar semana —{" "}
+            {weekStart.format("DD/MM")} al {weekEnd.format("DD/MM/YYYY")}
+          </Space>
+        }
+        open={fillModalOpen}
+        onOk={fillWeek}
+        onCancel={() => {
+          setFillModalOpen(false);
+          setSelectedFillShift(undefined);
+          setSelectedFillUsers([]);
+          setSelectedFillDays([1, 2, 3, 4, 5]);
+        }}
+        okText="Asignar"
+        confirmLoading={filling}
+        okButtonProps={{
+          disabled: !selectedFillShift || selectedFillDays.length === 0,
+        }}
+        width={500}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 8 }}>
+
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Turno *</div>
+            <Select
+              style={{ width: "100%" }}
+              placeholder="Seleccioná un turno..."
+              value={selectedFillShift}
+              onChange={setSelectedFillShift}
+              options={shifts.map((s) => ({
+                value: s.id,
+                label: `${s.name}${s.startTime ? ` · ${s.startTime} – ${s.endTime}` : ""}`,
+              }))}
+            />
+          </div>
+
+          <Divider style={{ margin: "4px 0" }} />
+
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>
+              Empleados{" "}
+              <span style={{ fontWeight: 400, color: "#888" }}>
+                (vacío = todos los activos)
+              </span>
+            </div>
+            <Select
+              mode="multiple"
+              style={{ width: "100%" }}
+              placeholder="Todos los empleados activos..."
+              value={selectedFillUsers}
+              onChange={setSelectedFillUsers}
+              allowClear
+              maxTagCount="responsive"
+              options={users
+                .filter((u) => u.active !== false)
+                .map((u) => ({
+                  value: u.id,
+                  label: `${u.name}${u.position?.name ? ` · ${u.position.name}` : ""}`,
+                }))}
+            />
+          </div>
+
+          <Divider style={{ margin: "4px 0" }} />
+
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>Días de la semana *</div>
+            <Checkbox.Group
+              value={selectedFillDays}
+              onChange={(vals) => setSelectedFillDays(vals as number[])}
+            >
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[
+                  { label: "Lun", value: 1 },
+                  { label: "Mar", value: 2 },
+                  { label: "Mié", value: 3 },
+                  { label: "Jue", value: 4 },
+                  { label: "Vie", value: 5 },
+                  { label: "Sáb", value: 6 },
+                  { label: "Dom", value: 7 },
+                ].map((d) => (
+                  <Checkbox key={d.value} value={d.value}>
+                    {d.label}
+                  </Checkbox>
+                ))}
+              </div>
+            </Checkbox.Group>
+            <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+              <Button
+                size="small"
+                onClick={() => setSelectedFillDays([1, 2, 3, 4, 5])}
+              >
+                Lun–Vie
+              </Button>
+              <Button
+                size="small"
+                onClick={() => setSelectedFillDays([1, 2, 3, 4, 5, 6, 7])}
+              >
+                Todos
+              </Button>
+              <Button
+                size="small"
+                onClick={() => setSelectedFillDays([])}
+              >
+                Ninguno
+              </Button>
+            </div>
+          </div>
+
+          <div style={{ color: "#888", fontSize: 12 }}>
+            Las celdas que ya tienen asignación no se modificarán.
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

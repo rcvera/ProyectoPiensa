@@ -196,7 +196,7 @@ export default function AttendancesPage() {
                     fontSize: 12,
                   }}
                 >
-                  {r.user.position ||
+                  {r.user.position?.name ||
                     r.user.email}
                 </Text>
               </div>

@@ -6,9 +6,8 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Pie, Column } from "@ant-design/charts";
-import { API_URL } from "../../api/config";
+import { api } from "../../services/auth.service";
 
 import "./Dashboard.css";
 
@@ -35,8 +34,8 @@ export default function DashboardPage() {
   const isEmployee = user.role === "EMPLOYEE";
 
   useEffect(() => {
-    axios
-      .get(`${API_URL}/dashboard/stats`)
+    api
+      .get("/dashboard/stats")
       .then((r) => setStats(r.data))
       .catch((error) => console.log(error));
   }, []);

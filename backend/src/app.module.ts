@@ -12,6 +12,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ReportsModule } from './reports/reports.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PositionsModule } from './positions/positions.module';
+import { WorkloadSurveysModule } from './workload-surveys/workload-surveys.module';
 
 
 @Module({
@@ -27,7 +29,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     ReportsModule,
     IncidentsModule,
     NotificationsModule,
-
+    PositionsModule,
+    WorkloadSurveysModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -104,6 +104,12 @@ export default function EmployeesPage() {
       dataIndex: "name",
     },
     {
+      title: "Cédula",
+      dataIndex: "cedula",
+      render: (v: string) =>
+        v || <span style={{ color: "#bbb" }}>—</span>,
+    },
+    {
       title: "Correo",
       dataIndex: "email",
     },
@@ -125,14 +131,9 @@ export default function EmployeesPage() {
     },
     {
       title: "Cargo",
-      dataIndex: "position",
-      render: (v: string) =>
-        v || (
-          <span
-            style={{ color: "#bbb" }}
-          >
-            —
-          </span>
+      render: (_: any, record: any) =>
+        record.position?.name || (
+          <span style={{ color: "#bbb" }}>—</span>
         ),
     },
     {

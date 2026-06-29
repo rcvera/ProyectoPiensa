@@ -14,29 +14,45 @@ export class AttendancesService {
     private overtimesService: OvertimesService,
   ) {}
 
-  async checkIn(
-    userId: string,
-  ) {
+  async checkIn(userId: string) {
 
-    const openAttendance =
-      await this.prisma.attendance.findFirst({
-        where: {
-          userId,
-          checkOut: null,
-        },
-      });
+    const openAttendance = await this.prisma.attendance.findFirst({
+      where: { userId, checkOut: null },
+    });
 
     if (openAttendance) {
-      throw new BadRequestException(
-        'Ya existe una entrada activa',
-      );
+      throw new BadRequestException('Ya existe una entrada activa');
+    }
+
+    // Verificar turno asignado para hoy
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(now);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const assignment = await this.prisma.assignment.findFirst({
+      where: {
+        userId,
+        date: { gte: todayStart, lte: todayEnd },
+      },
+      include: { shift: true },
+    });
+
+    if (assignment?.shift?.startTime) {
+      const [shiftHour, shiftMin] = assignment.shift.startTime.split(':').map(Number);
+      const shiftMinutes = shiftHour * 60 + shiftMin;
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+      if (nowMinutes < shiftMinutes) {
+        throw new BadRequestException(
+          `Tu turno comienza a las ${assignment.shift.startTime}. No puedes marcar entrada antes de esa hora.`,
+        );
+      }
     }
 
     return this.prisma.attendance.create({
-      data: {
-        userId,
-        checkIn: new Date(),
-      },
+      data: { userId, checkIn: new Date() },
     });
   }
 
@@ -184,7 +200,7 @@ export class AttendancesService {
             id: true,
             name: true,
             email: true,
-            position: true,
+            position: { select: { id: true, name: true } },
           },
         },
       },

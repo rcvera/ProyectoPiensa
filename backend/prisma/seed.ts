@@ -36,7 +36,6 @@ async function main() {
       password,
       role: 'SUPERVISOR',
       active: true,
-      position: 'Supervisor de turno',
     },
   });
 
@@ -51,7 +50,6 @@ async function main() {
       password,
       role: 'EMPLOYEE',
       active: true,
-      position: 'Operador',
     },
   });
 

@@ -22,6 +22,7 @@ import IncidentsList from "../pages/Incidents/IncidentsList";
 import IncidentDetail from "../pages/Incidents/IncidentDetail";
 import MySchedulePage from "../pages/MySchedule/MySchedulePage";
 import MyAttendancePage from "../pages/MyAttendance/MyAttendancePage";
+import PositionsPage from "../pages/Positions/PositionsPage";
 
 export default function AppRoutes() {
   return (
@@ -93,6 +94,10 @@ export default function AppRoutes() {
             element={
               <MyAttendancePage />
             }
+          />
+          <Route
+            path="/positions"
+            element={<PositionsPage />}
           />
         </Route>
 

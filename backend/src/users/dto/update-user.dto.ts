@@ -5,10 +5,10 @@ import {
   IsIn,
   IsBoolean,
   MinLength,
+  Matches,
 } from 'class-validator';
 
 export class UpdateUserDto {
-
   @IsOptional()
   @IsString()
   name?: string;
@@ -28,11 +28,16 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
+  @Matches(/^\d{10}$/, { message: 'La cédula debe tener exactamente 10 dígitos' })
+  cedula?: string;
+
+  @IsOptional()
+  @IsString()
   phone?: string;
 
   @IsOptional()
   @IsString()
-  position?: string;
+  positionId?: string;
 
   @IsOptional()
   @IsBoolean()

@@ -57,7 +57,6 @@ export class ReportsService {
       sheet.addRow({
         name: e.name,
         email: e.email,
-        position: e.position,
         active:
           e.active
             ? 'Activo'

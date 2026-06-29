@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsIn,
   MinLength,
+  Matches,
 } from 'class-validator';
 
 export class CreateUserDto {
@@ -22,8 +23,15 @@ export class CreateUserDto {
   role?: 'ADMIN' | 'SUPERVISOR' | 'EMPLOYEE';
 
   @IsOptional()
+  @IsString()
+  @Matches(/^\d{10}$/, { message: 'La cédula debe tener exactamente 10 dígitos' })
+  cedula?: string;
+
+  @IsOptional()
+  @IsString()
   phone?: string;
 
   @IsOptional()
-  position?: string;
+  @IsString()
+  positionId?: string;
 }

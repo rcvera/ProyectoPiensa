@@ -32,26 +32,40 @@ enum IncidentStatus {
   CERRADO
 }
 
+model Position {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  active Boolean @default(true)
+
+  users User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model User {
   id String @id @default(uuid())
 
   name     String
-  email    String @unique
+  email    String  @unique
   password String
+  cedula   String? @unique
 
   role Role @default(EMPLOYEE)
 
   active Boolean @default(true)
 
-  phone    String?
-  position String?
+  phone      String?
+  positionId String?
+  position   Position? @relation(fields: [positionId], references: [id])
 
-  assignments    Assignment[]
-  attendances    Attendance[]
-  overtimes      Overtime[]
-  incidents      Incident[]     @relation("EmployeeIncidents")
-  reviewedIncidents Incident[]  @relation("ReviewerIncidents")
-  notifications  Notification[]
+  assignments       Assignment[]
+  attendances       Attendance[]
+  overtimes         Overtime[]
+  incidents         Incident[]       @relation("EmployeeIncidents")
+  reviewedIncidents Incident[]       @relation("ReviewerIncidents")
+  notifications     Notification[]
+  workloadSurveys   WorkloadSurvey[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -164,4 +178,23 @@ model Notification {
 
   user     User      @relation(fields: [userId], references: [id])
   incident Incident? @relation(fields: [incidentId], references: [id])
+}
+
+model WorkloadSurvey {
+  id     String @id @default(uuid())
+  userId String
+  month  Int
+  year   Int
+
+  hoursFeeling   Int?
+  physicalLoad   Int?
+  emotionalLoad  Int?
+  comments       String?
+
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, month, year])
 }

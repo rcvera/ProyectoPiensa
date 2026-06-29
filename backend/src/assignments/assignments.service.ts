@@ -119,6 +119,128 @@ export class AssignmentsService {
     });
   }
 
+  async fillWeek(
+    shiftId: string,
+    from: string,
+    to: string,
+    userIds?: string[],
+    isoDays?: number[],
+  ) {
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+
+    const targetUsers =
+      userIds && userIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: userIds }, active: true },
+            select: { id: true },
+          })
+        : await this.prisma.user.findMany({
+            where: { active: true },
+            select: { id: true },
+          });
+
+    const allDays: Date[] = [];
+    const cursor = new Date(fromDate);
+    while (cursor <= toDate) {
+      allDays.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    // Filter by ISO day of week (1=Mon … 7=Sun) if provided
+    const days =
+      isoDays && isoDays.length > 0
+        ? allDays.filter((d) => {
+            const iso = d.getDay() === 0 ? 7 : d.getDay();
+            return isoDays.includes(iso);
+          })
+        : allDays;
+
+    const existing = await this.prisma.assignment.findMany({
+      where: { date: { gte: fromDate, lte: toDate } },
+      select: { userId: true, date: true },
+    });
+
+    const existingSet = new Set(
+      existing.map((a) => `${a.userId}_${a.date.toISOString().slice(0, 10)}`),
+    );
+
+    const toCreate: { userId: string; shiftId: string; date: Date }[] = [];
+
+    for (const user of targetUsers) {
+      for (const day of days) {
+        const key = `${user.id}_${day.toISOString().slice(0, 10)}`;
+        if (!existingSet.has(key)) {
+          toCreate.push({ userId: user.id, shiftId, date: day });
+        }
+      }
+    }
+
+    if (toCreate.length > 0) {
+      await this.prisma.assignment.createMany({ data: toCreate });
+    }
+
+    return { created: toCreate.length, skipped: existing.length };
+  }
+
+  async clearWeek(from: string, to: string, userIds?: string[]) {
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+
+    const where: any = {
+      date: { gte: fromDate, lte: toDate },
+    };
+
+    if (userIds && userIds.length > 0) {
+      where.userId = { in: userIds };
+    }
+
+    const result = await this.prisma.assignment.deleteMany({ where });
+
+    return { deleted: result.count };
+  }
+
+  async copyWeek(from: string, to: string) {
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+
+    const prevFrom = new Date(fromDate);
+    prevFrom.setDate(prevFrom.getDate() - 7);
+    const prevTo = new Date(toDate);
+    prevTo.setDate(prevTo.getDate() - 7);
+
+    const prevAssignments = await this.prisma.assignment.findMany({
+      where: { date: { gte: prevFrom, lte: prevTo } },
+      select: { userId: true, shiftId: true, date: true },
+    });
+
+    const existing = await this.prisma.assignment.findMany({
+      where: { date: { gte: fromDate, lte: toDate } },
+      select: { userId: true, date: true },
+    });
+
+    const existingSet = new Set(
+      existing.map((a) => `${a.userId}_${a.date.toISOString().slice(0, 10)}`),
+    );
+
+    const toCreate: { userId: string; shiftId: string; date: Date }[] = [];
+
+    for (const prev of prevAssignments) {
+      const newDate = new Date(prev.date);
+      newDate.setDate(newDate.getDate() + 7);
+      const key = `${prev.userId}_${newDate.toISOString().slice(0, 10)}`;
+      if (!existingSet.has(key)) {
+        toCreate.push({ userId: prev.userId, shiftId: prev.shiftId, date: newDate });
+      }
+    }
+
+    if (toCreate.length > 0) {
+      await this.prisma.assignment.createMany({ data: toCreate });
+    }
+
+    return { created: toCreate.length, skipped: existing.length };
+  }
+
   async publishWeek(
     from: string,
     to: string,

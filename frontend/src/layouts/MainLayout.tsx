@@ -20,6 +20,8 @@ import {
   UserOutlined,
   LogoutOutlined,
   CalendarOutlined,
+  ApartmentOutlined,
+  LockOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -28,7 +30,11 @@ import {
   useLocation,
 } from "react-router-dom";
 
+import { useState, useEffect } from "react";
 import NotificationsBell from "./NotificationsBell";
+import ChangePasswordModal from "../components/ChangePasswordModal";
+import WorkloadSurveyModal from "../components/WorkloadSurveyModal";
+import { api } from "../services/auth.service";
 
 const { Text } = Typography;
 const { Sider, Content, Header } = Layout;
@@ -67,7 +73,16 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [changePwdOpen, setChangePwdOpen] = useState(false);
+  const [pendingSurvey, setPendingSurvey] = useState<any>(null);
+
   const user = getUser();
+
+  useEffect(() => {
+    api.get("/workload-surveys/mine/pending")
+      .then((r) => { if (r.data) setPendingSurvey(r.data); })
+      .catch(() => {});
+  }, []);
 
   const role = user.role || "EMPLOYEE";
 
@@ -87,6 +102,11 @@ export default function MainLayout() {
       key: "/employees",
       icon: <TeamOutlined />,
       label: "Empleados",
+    },
+    {
+      key: "/positions",
+      icon: <ApartmentOutlined />,
+      label: "Cargos",
     },
     {
       key: "/shifts",
@@ -213,6 +233,13 @@ export default function MainLayout() {
     },
     { type: "divider" },
     {
+      key: "change-password",
+      icon: <LockOutlined />,
+      label: "Cambiar contraseña",
+      onClick: () => setChangePwdOpen(true),
+    },
+    { type: "divider" },
+    {
       key: "logout",
       icon: <LogoutOutlined />,
       label: "Cerrar sesión",
@@ -325,6 +352,16 @@ export default function MainLayout() {
           <Outlet />
         </Content>
       </Layout>
+
+      <ChangePasswordModal
+        open={changePwdOpen}
+        onClose={() => setChangePwdOpen(false)}
+      />
+
+      <WorkloadSurveyModal
+        survey={pendingSurvey}
+        onClose={() => setPendingSurvey(null)}
+      />
     </Layout>
   );
 }

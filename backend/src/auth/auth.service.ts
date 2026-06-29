@@ -1,12 +1,11 @@
 import {
   Injectable,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
-
 import * as bcrypt from 'bcrypt';
-
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -16,39 +15,24 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-async login(email: string, password: string) {
-  console.log('================');
-  console.log('EMAIL:', email);
-  console.log('PASSWORD:', password);
+  async login(email: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
 
-  const user =
-    await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-  console.log('USER:', user);
-
-  if (!user) {
-    throw new UnauthorizedException(
-      'Credenciales incorrectas',
-    );
-  }
-    const isValid = await bcrypt.compare(
-      password,
-      user.password,
-    );
-
-    if (!isValid) {
-      throw new UnauthorizedException(
-        'Credenciales incorrectas',
-      );
+    if (!user) {
+      throw new UnauthorizedException('Credenciales incorrectas');
     }
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    };
+    if (!user.active) {
+      throw new UnauthorizedException('Tu cuenta está desactivada. Contactá al administrador.');
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+
+    if (!isValid) {
+      throw new UnauthorizedException('Credenciales incorrectas');
+    }
+
+    const payload = { sub: user.id, email: user.email, role: user.role };
 
     return {
       access_token: this.jwtService.sign(payload),
@@ -59,5 +43,36 @@ async login(email: string, password: string) {
         role: user.role,
       },
     };
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new UnauthorizedException('Usuario no encontrado');
+    }
+
+    const isValid = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isValid) {
+      throw new BadRequestException('La contraseña actual es incorrecta');
+    }
+
+    if (newPassword.length < 6) {
+      throw new BadRequestException('La nueva contraseña debe tener al menos 6 caracteres');
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    return { message: 'Contraseña actualizada correctamente' };
   }
 }

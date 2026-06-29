@@ -72,6 +72,52 @@ export class AssignmentsController {
   }
 
   @Roles('ADMIN')
+  @Post('fill-week')
+  fillWeek(
+    @Body()
+    body: {
+      shiftId: string;
+      from: string;
+      to: string;
+      userIds?: string[];
+      isoDays?: number[];
+    },
+  ) {
+    return this.assignmentsService.fillWeek(
+      body.shiftId,
+      body.from,
+      body.to,
+      body.userIds,
+      body.isoDays,
+    );
+  }
+
+  @Roles('ADMIN')
+  @Post('clear-week')
+  clearWeek(
+    @Body()
+    body: { from: string; to: string; userIds?: string[] },
+  ) {
+    return this.assignmentsService.clearWeek(
+      body.from,
+      body.to,
+      body.userIds,
+    );
+  }
+
+  @Roles('ADMIN')
+  @Post('copy-week')
+  copyWeek(
+    @Body()
+    body: { from: string; to: string },
+  ) {
+    return this.assignmentsService.copyWeek(
+      body.from,
+      body.to,
+    );
+  }
+
+  @Roles('ADMIN')
   @Delete(':id')
   remove(
     @Param('id') id: string,
