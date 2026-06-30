@@ -5,11 +5,30 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 import * as bcrypt from 'bcrypt';
+
+function generatePassword(length = 10): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const symbols = '@#$%&*';
+  const all = upper + lower + digits + symbols;
+  const pwd = [
+    upper[Math.floor(Math.random() * upper.length)],
+    lower[Math.floor(Math.random() * lower.length)],
+    digits[Math.floor(Math.random() * digits.length)],
+    symbols[Math.floor(Math.random() * symbols.length)],
+  ];
+  for (let i = pwd.length; i < length; i++) {
+    pwd.push(all[Math.floor(Math.random() * all.length)]);
+  }
+  return pwd.sort(() => Math.random() - 0.5).join('');
+}
 
 const USER_SELECT = {
   id: true,
@@ -28,6 +47,7 @@ export class UsersService {
 
   constructor(
     private prisma: PrismaService,
+    private mail: MailService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -49,9 +69,10 @@ export class UsersService {
       }
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const plainPassword = createUserDto.password || generatePassword();
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         name: createUserDto.name,
         email: createUserDto.email,
@@ -63,6 +84,11 @@ export class UsersService {
       },
       select: USER_SELECT,
     });
+
+    // Enviar credenciales por correo (no bloqueante)
+    this.mail.sendWelcome(user.name, user.email, plainPassword);
+
+    return user;
   }
 
   async findAll() {

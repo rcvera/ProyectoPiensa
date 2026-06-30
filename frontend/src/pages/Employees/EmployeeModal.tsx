@@ -77,8 +77,9 @@ export default function EmployeeModal({
         await api.patch(`/users/${employee.id}`, payload);
         message.success("Empleado actualizado");
       } else {
-        await api.post("/users", values);
-        message.success("Empleado creado");
+        const { password: _pw, ...payload } = values;
+        await api.post("/users", payload);
+        message.success("Empleado creado. Se envió la contraseña al correo.");
       }
 
       reload();
@@ -139,22 +140,27 @@ export default function EmployeeModal({
           <Input />
         </Form.Item>
 
-        <Form.Item
-          label={isEdit ? "Nueva contraseña (opcional)" : "Contraseña"}
-          name="password"
-          rules={
-            isEdit
-              ? [{ min: 6, message: "Mínimo 6 caracteres" }]
-              : [
-                  { required: true, message: "La contraseña es obligatoria" },
-                  { min: 6, message: "Mínimo 6 caracteres" },
-                ]
-          }
-        >
-          <Input.Password
-            placeholder={isEdit ? "Dejar vacío para no cambiar" : ""}
-          />
-        </Form.Item>
+        {isEdit ? (
+          <Form.Item
+            label="Nueva contraseña (opcional)"
+            name="password"
+            rules={[{ min: 6, message: "Mínimo 6 caracteres" }]}
+          >
+            <Input.Password placeholder="Dejar vacío para no cambiar" />
+          </Form.Item>
+        ) : (
+          <div style={{
+            background: "#f6ffed",
+            border: "1px solid #b7eb8f",
+            borderRadius: 6,
+            padding: "10px 14px",
+            marginBottom: 16,
+            fontSize: 13,
+            color: "#389e0d",
+          }}>
+            📧 Se generará una contraseña automática y se enviará al correo del empleado.
+          </div>
+        )}
 
         <Form.Item
           label="Cédula"

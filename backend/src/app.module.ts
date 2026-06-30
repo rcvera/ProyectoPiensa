@@ -14,6 +14,7 @@ import { IncidentsModule } from './incidents/incidents.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PositionsModule } from './positions/positions.module';
 import { WorkloadSurveysModule } from './workload-surveys/workload-surveys.module';
+import { MailModule } from './mail/mail.module';
 
 
 @Module({
@@ -31,6 +32,7 @@ import { WorkloadSurveysModule } from './workload-surveys/workload-surveys.modul
     NotificationsModule,
     PositionsModule,
     WorkloadSurveysModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
