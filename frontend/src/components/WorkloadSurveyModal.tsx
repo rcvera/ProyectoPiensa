@@ -59,7 +59,7 @@ export default function WorkloadSurveyModal({ survey, onClose }: Props) {
       onCancel={onClose}
       confirmLoading={loading}
       width={500}
-      maskClosable={false}
+      mask={{ closable: false }}
     >
       <Alert
         type="warning"
