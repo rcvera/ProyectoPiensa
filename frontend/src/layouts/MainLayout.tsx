@@ -30,11 +30,9 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import NotificationsBell from "./NotificationsBell";
 import ChangePasswordModal from "../components/ChangePasswordModal";
-import WorkloadSurveyModal from "../components/WorkloadSurveyModal";
-import { api } from "../services/auth.service";
 
 const { Text } = Typography;
 const { Sider, Content, Header } = Layout;
@@ -74,15 +72,8 @@ export default function MainLayout() {
   const location = useLocation();
 
   const [changePwdOpen, setChangePwdOpen] = useState(false);
-  const [pendingSurvey, setPendingSurvey] = useState<any>(null);
 
   const user = getUser();
-
-  useEffect(() => {
-    api.get("/workload-surveys/mine/pending")
-      .then((r) => { if (r.data) setPendingSurvey(r.data); })
-      .catch(() => {});
-  }, []);
 
   const role = user.role || "EMPLOYEE";
 
@@ -356,11 +347,6 @@ export default function MainLayout() {
       <ChangePasswordModal
         open={changePwdOpen}
         onClose={() => setChangePwdOpen(false)}
-      />
-
-      <WorkloadSurveyModal
-        survey={pendingSurvey}
-        onClose={() => setPendingSurvey(null)}
       />
     </Layout>
   );

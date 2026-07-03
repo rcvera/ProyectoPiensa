@@ -265,7 +265,7 @@ export default function MyAttendancePage() {
                     : "",
               },
               {
-                title: "Vuelta",
+                title: "Regreso del almuerzo",
                 description:
                   open?.breakEnd
                     ? formatTime(
@@ -443,7 +443,7 @@ export default function MyAttendancePage() {
               ) => formatTime(v),
             },
             {
-              title: "Vuelta",
+              title: "Regreso del almuerzo",
               dataIndex: "breakEnd",
               render: (
                 v: string | null,

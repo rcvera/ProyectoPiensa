@@ -5,35 +5,6 @@ import { PrismaService } from '../prisma/prisma.service';
 export class WorkloadSurveysService {
   constructor(private prisma: PrismaService) {}
 
-  async getPending(userId: string) {
-    return this.prisma.workloadSurvey.findFirst({
-      where: { userId, completedAt: null },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async respond(
-    id: string,
-    userId: string,
-    dto: {
-      hoursFeeling: number;
-      physicalLoad: number;
-      emotionalLoad: number;
-      comments?: string;
-    },
-  ) {
-    return this.prisma.workloadSurvey.update({
-      where: { id },
-      data: {
-        hoursFeeling: dto.hoursFeeling,
-        physicalLoad: dto.physicalLoad,
-        emotionalLoad: dto.emotionalLoad,
-        comments: dto.comments,
-        completedAt: new Date(),
-      },
-    });
-  }
-
   async createIfNotExists(userId: string, month: number, year: number) {
     const existing = await this.prisma.workloadSurvey.findUnique({
       where: { userId_month_year: { userId, month, year } },

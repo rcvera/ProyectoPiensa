@@ -216,7 +216,7 @@ export default function AttendancesPage() {
             ) => formatTime(v),
           },
           {
-            title: "Vuelta",
+            title: "Regreso del almuerzo",
             dataIndex: "breakEnd",
             render: (
               v: string | null,

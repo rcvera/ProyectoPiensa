@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkloadSurveysService } from '../workload-surveys/workload-surveys.service';
+import { MailService } from '../mail/mail.service';
 
 const MONTHLY_OVERTIME_LIMIT = 48;
 
@@ -10,6 +11,7 @@ export class OvertimesService {
   constructor(
     private prisma: PrismaService,
     private surveys: WorkloadSurveysService,
+    private mail: MailService,
   ) {}
 
   async generateOvertime(attendanceId: string) {
@@ -52,6 +54,14 @@ export class OvertimesService {
       const totalMonthly = monthlyRecords.reduce((s, r) => s + r.overtimeHours, 0);
 
       if (totalMonthly >= MONTHLY_OVERTIME_LIMIT) {
+        const alreadyAlerted = await this.prisma.workloadSurvey.findUnique({
+          where: { userId_month_year: { userId: attendance.userId, month, year } },
+        });
+
+        if (alreadyAlerted) {
+          return record;
+        }
+
         // Notificar al empleado
         await this.prisma.notification.create({
           data: {
@@ -69,7 +79,7 @@ export class OvertimesService {
 
         const user = await this.prisma.user.findUnique({
           where: { id: attendance.userId },
-          select: { name: true },
+          select: { name: true, email: true },
         });
 
         if (admins.length > 0 && user) {
@@ -84,6 +94,18 @@ export class OvertimesService {
 
         // Crear encuesta pendiente (una por mes)
         await this.surveys.createIfNotExists(attendance.userId, month, year);
+
+        // Notificar al empleado por correo
+        if (user) {
+          await this.mail.sendWorkloadSurveyAlert(
+            user.name,
+            user.email,
+            totalMonthly,
+            MONTHLY_OVERTIME_LIMIT,
+            month,
+            year,
+          );
+        }
       }
     }
 
