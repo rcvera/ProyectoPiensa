@@ -14,12 +14,18 @@ async function bootstrap() {
     }),
   );
 
+  const extraOrigins = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
   app.enableCors({
     origin: [
       /^http:\/\/localhost:\d+$/,
       /^http:\/\/127\.0\.0\.1:\d+$/,
       /^http:\/\/192\.168\.\d+\.\d+:\d+$/,
       /^http:\/\/10\.\d+\.\d+\.\d+:\d+$/,
+      ...extraOrigins,
     ],
     credentials: true,
   });
@@ -28,6 +34,6 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-  await app.listen(3000);
+  await app.listen(process.env.PORT ? Number(process.env.PORT) : 3000);
 }
 bootstrap();
