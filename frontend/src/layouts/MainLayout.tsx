@@ -80,8 +80,6 @@ export default function MainLayout() {
   const isAdmin = role === "ADMIN";
   const isSupervisor =
     role === "SUPERVISOR";
-  const isEmployee =
-    role === "EMPLOYEE";
 
   const adminItems = [
     {
