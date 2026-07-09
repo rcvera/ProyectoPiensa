@@ -32,15 +32,33 @@ function generatePassword(length = 10): string {
 
 const USER_SELECT = {
   id: true,
-  name: true,
   email: true,
-  cedula: true,
   role: true,
-  phone: true,
-  positionId: true,
-  position: { select: { id: true, name: true } },
   active: true,
+  employee: {
+    select: {
+      name: true,
+      cedula: true,
+      phone: true,
+      positionId: true,
+      position: { select: { id: true, name: true } },
+    },
+  },
 };
+
+// Aplana { ...user, employee: { name, cedula, ... } } a la forma plana
+// que espera el frontend: { ...user, name, cedula, ... }
+function flattenUser(user: any) {
+  const { employee, ...rest } = user;
+  return {
+    ...rest,
+    name: employee?.name ?? null,
+    cedula: employee?.cedula ?? null,
+    phone: employee?.phone ?? null,
+    positionId: employee?.positionId ?? null,
+    position: employee?.position ?? null,
+  };
+}
 
 @Injectable()
 export class UsersService {
@@ -61,7 +79,7 @@ export class UsersService {
     }
 
     if (createUserDto.cedula) {
-      const cedulaExists = await this.prisma.user.findUnique({
+      const cedulaExists = await this.prisma.employee.findUnique({
         where: { cedula: createUserDto.cedula },
       });
       if (cedulaExists) {
@@ -74,33 +92,41 @@ export class UsersService {
 
     const user = await this.prisma.user.create({
       data: {
-        name: createUserDto.name,
         email: createUserDto.email,
         password: hashedPassword,
-        cedula: createUserDto.cedula,
         role: createUserDto.role ?? 'EMPLOYEE',
-        phone: createUserDto.phone,
-        positionId: createUserDto.positionId,
+        employee: {
+          create: {
+            name: createUserDto.name,
+            cedula: createUserDto.cedula,
+            phone: createUserDto.phone,
+            positionId: createUserDto.positionId,
+          },
+        },
       },
       select: USER_SELECT,
     });
 
     // Enviar credenciales por correo (no bloqueante)
-    this.mail.sendWelcome(user.name, user.email, plainPassword);
+    this.mail.sendWelcome(createUserDto.name, user.email, plainPassword);
 
-    return user;
+    return flattenUser(user);
   }
 
   async findAll() {
-    return this.prisma.user.findMany({
+    const users = await this.prisma.user.findMany({
       select: USER_SELECT,
       orderBy: { createdAt: 'desc' },
     });
+    return users.map(flattenUser);
   }
 
   async update(id: string, dto: UpdateUserDto) {
 
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { employee: true },
+    });
 
     if (!user) {
       throw new NotFoundException('Empleado no encontrado');
@@ -115,8 +141,8 @@ export class UsersService {
       }
     }
 
-    if (dto.cedula && dto.cedula !== user.cedula) {
-      const exists = await this.prisma.user.findUnique({
+    if (dto.cedula && dto.cedula !== user.employee?.cedula) {
+      const exists = await this.prisma.employee.findUnique({
         where: { cedula: dto.cedula },
       });
       if (exists) {
@@ -124,31 +150,71 @@ export class UsersService {
       }
     }
 
-    const data: any = {
-      name: dto.name,
+    const userData: any = {
       email: dto.email,
-      cedula: dto.cedula,
       role: dto.role,
-      phone: dto.phone,
-      positionId: dto.positionId ?? null,
       active: dto.active,
     };
 
     if (dto.password) {
-      data.password = await bcrypt.hash(dto.password, 10);
+      userData.password = await bcrypt.hash(dto.password, 10);
     }
 
-    Object.keys(data).forEach((k) => {
-      if (data[k] === undefined) {
-        delete data[k];
-      }
+    const employeeData: any = {
+      name: dto.name,
+      cedula: dto.cedula,
+      phone: dto.phone,
+      positionId: dto.positionId ?? null,
+    };
+
+    [userData, employeeData].forEach((data) => {
+      Object.keys(data).forEach((k) => {
+        if (data[k] === undefined) {
+          delete data[k];
+        }
+      });
     });
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
-      data,
+      data: {
+        ...userData,
+        ...(Object.keys(employeeData).length > 0
+          ? { employee: { update: employeeData } }
+          : {}),
+      },
       select: USER_SELECT,
     });
+
+    return flattenUser(updated);
+  }
+
+  async resetPassword(id: string) {
+
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { employee: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Empleado no encontrado');
+    }
+
+    const plainPassword = generatePassword();
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword },
+    });
+
+    this.mail.sendPasswordReset(
+      user.employee?.name ?? user.email,
+      user.email,
+      plainPassword,
+    );
+
+    return { message: 'Contraseña restablecida y enviada por correo' };
   }
 
   async setActive(id: string, active: boolean) {
@@ -162,7 +228,7 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: { active },
-      select: { id: true, name: true, email: true, role: true, active: true },
+      select: { id: true, email: true, role: true, active: true },
     });
   }
 }

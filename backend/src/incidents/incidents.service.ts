@@ -11,6 +11,29 @@ import { CreateIncidentDto } from './dto/create-incident.dto';
 import { RespondIncidentDto } from './dto/respond-incident.dto';
 import { FilterIncidentsDto } from './dto/filter-incidents.dto';
 
+const USER_REF_SELECT = {
+  id: true,
+  email: true,
+  employee: { select: { name: true } },
+};
+
+const REVIEWER_REF_SELECT = {
+  id: true,
+  employee: { select: { name: true } },
+};
+
+function flattenUserRef(user: any) {
+  if (!user) return user;
+  const { employee, ...rest } = user;
+  return { ...rest, name: employee?.name ?? user.email };
+}
+
+function flattenReviewerRef(reviewer: any) {
+  if (!reviewer) return reviewer;
+  const { employee, ...rest } = reviewer;
+  return { ...rest, name: employee?.name ?? null };
+}
+
 @Injectable()
 export class IncidentsService {
 
@@ -36,15 +59,19 @@ export class IncidentsService {
           photoUrl: photoUrl ?? undefined,
         },
         include: {
-          user: true,
+          user: { select: USER_REF_SELECT },
         },
       });
 
-    await this.notificationsService.notifyNewIncident(
-      incident,
-    );
+    await this.notificationsService.notifyNewIncident({
+      ...incident,
+      user: flattenUserRef(incident.user) as any,
+    });
 
-    return incident;
+    return {
+      ...incident,
+      user: flattenUserRef(incident.user),
+    };
   }
 
   async findAll(
@@ -79,48 +106,43 @@ export class IncidentsService {
       }
     }
 
-    return this.prisma.incident.findMany({
+    const incidents = await this.prisma.incident.findMany({
       where,
       include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        reviewedBy: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        user: { select: USER_REF_SELECT },
+        reviewedBy: { select: REVIEWER_REF_SELECT },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
+
+    return incidents.map((i) => ({
+      ...i,
+      user: flattenUserRef(i.user),
+      reviewedBy: flattenReviewerRef(i.reviewedBy),
+    }));
   }
 
   async findMine(
     userId: string,
   ) {
-    return this.prisma.incident.findMany({
+    const incidents = await this.prisma.incident.findMany({
       where: {
         userId,
       },
       include: {
-        reviewedBy: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        reviewedBy: { select: REVIEWER_REF_SELECT },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
+
+    return incidents.map((i) => ({
+      ...i,
+      reviewedBy: flattenReviewerRef(i.reviewedBy),
+    }));
   }
 
   async findOne(
@@ -135,19 +157,8 @@ export class IncidentsService {
           id,
         },
         include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-          reviewedBy: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
+          user: { select: USER_REF_SELECT },
+          reviewedBy: { select: REVIEWER_REF_SELECT },
         },
       });
 
@@ -170,7 +181,11 @@ export class IncidentsService {
       );
     }
 
-    return incident;
+    return {
+      ...incident,
+      user: flattenUserRef(incident.user),
+      reviewedBy: flattenReviewerRef(incident.reviewedBy),
+    };
   }
 
   async respond(

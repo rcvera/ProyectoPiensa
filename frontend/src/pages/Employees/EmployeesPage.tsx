@@ -4,7 +4,8 @@ import {
   Table,
   Tag,
   Space,
-  Popconfirm,
+  Dropdown,
+  Modal,
   message,
 } from "antd";
 
@@ -12,6 +13,9 @@ import {
   EditOutlined,
   StopOutlined,
   CheckCircleOutlined,
+  KeyOutlined,
+  MoreOutlined,
+  ExclamationCircleFilled,
 } from "@ant-design/icons";
 
 import {
@@ -70,32 +74,73 @@ export default function EmployeesPage() {
     setOpen(false);
   };
 
-  const onToggleActive = async (
+  const onResetPassword = (
     record: any,
   ) => {
-    try {
-      if (record.active) {
-        await api.delete(
-          `/users/${record.id}`,
-        );
-        message.success(
-          "Empleado desactivado",
-        );
-      } else {
-        await api.patch(
-          `/users/${record.id}/activate`,
-        );
-        message.success(
-          "Empleado reactivado",
-        );
-      }
-      loadEmployees();
-    } catch (e: any) {
-      message.error(
-        e?.response?.data?.message ||
-          "No se pudo cambiar el estado",
-      );
-    }
+    Modal.confirm({
+      title: "Restablecer contraseña",
+      icon: <ExclamationCircleFilled />,
+      content: `Se generará una nueva contraseña para ${record.name} y se le enviará por correo a ${record.email}.`,
+      okText: "Sí, restablecer",
+      cancelText: "Cancelar",
+      onOk: async () => {
+        try {
+          await api.patch(
+            `/users/${record.id}/reset-password`,
+          );
+          message.success(
+            `Se envió la nueva contraseña a ${record.email}`,
+          );
+        } catch (e: any) {
+          message.error(
+            e?.response?.data?.message ||
+              "No se pudo restablecer la contraseña",
+          );
+        }
+      },
+    });
+  };
+
+  const onToggleActive = (
+    record: any,
+  ) => {
+    Modal.confirm({
+      title: record.active
+        ? "Desactivar empleado"
+        : "Reactivar empleado",
+      icon: <ExclamationCircleFilled />,
+      content: record.active
+        ? "Conserva el historial pero no podrá ingresar."
+        : "El empleado podrá volver a ingresar.",
+      okText: "Sí",
+      cancelText: "Cancelar",
+      okButtonProps: { danger: record.active },
+      onOk: async () => {
+        try {
+          if (record.active) {
+            await api.delete(
+              `/users/${record.id}`,
+            );
+            message.success(
+              "Empleado desactivado",
+            );
+          } else {
+            await api.patch(
+              `/users/${record.id}/activate`,
+            );
+            message.success(
+              "Empleado reactivado",
+            );
+          }
+          loadEmployees();
+        } catch (e: any) {
+          message.error(
+            e?.response?.data?.message ||
+              "No se pudo cambiar el estado",
+          );
+        }
+      },
+    });
   };
 
   const columns = [
@@ -147,9 +192,10 @@ export default function EmployeesPage() {
     },
     {
       title: "Acciones",
-      width: 200,
+      width: 140,
+      fixed: "right" as const,
       render: (_: any, record: any) => (
-        <Space>
+        <Space size="small">
           <Button
             size="small"
             icon={<EditOutlined />}
@@ -157,34 +203,39 @@ export default function EmployeesPage() {
           >
             Editar
           </Button>
-          <Popconfirm
-            title={
-              record.active
-                ? "¿Desactivar empleado? Conserva el historial pero no podrá ingresar."
-                : "¿Reactivar empleado?"
-            }
-            okText="Sí"
-            cancelText="No"
-            onConfirm={() =>
-              onToggleActive(record)
-            }
+          <Dropdown
+            menu={{
+              items: [
+                {
+                  key: "reset-password",
+                  icon: <KeyOutlined />,
+                  label: "Restablecer contraseña",
+                  onClick: () =>
+                    onResetPassword(record),
+                },
+                {
+                  key: "toggle-active",
+                  icon: record.active ? (
+                    <StopOutlined />
+                  ) : (
+                    <CheckCircleOutlined />
+                  ),
+                  danger: record.active,
+                  label: record.active
+                    ? "Desactivar"
+                    : "Reactivar",
+                  onClick: () =>
+                    onToggleActive(record),
+                },
+              ],
+            }}
+            trigger={["click"]}
           >
             <Button
               size="small"
-              danger={record.active}
-              icon={
-                record.active ? (
-                  <StopOutlined />
-                ) : (
-                  <CheckCircleOutlined />
-                )
-              }
-            >
-              {record.active
-                ? "Desactivar"
-                : "Reactivar"}
-            </Button>
-          </Popconfirm>
+              icon={<MoreOutlined />}
+            />
+          </Dropdown>
         </Space>
       ),
     },
@@ -207,6 +258,7 @@ export default function EmployeesPage() {
           rowKey="id"
           columns={columns}
           dataSource={employees}
+          scroll={{ x: "max-content" }}
         />
       </Card>
 

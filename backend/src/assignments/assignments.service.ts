@@ -40,7 +40,7 @@ export class AssignmentsService {
         date,
       },
       include: {
-        user: true,
+        user: { select: { id: true, email: true, role: true, active: true } },
         shift: true,
       },
     });
@@ -62,7 +62,7 @@ export class AssignmentsService {
     return this.prisma.assignment.findMany({
       where,
       include: {
-        user: true,
+        user: { select: { id: true, email: true, role: true, active: true } },
         shift: true,
       },
       orderBy: {

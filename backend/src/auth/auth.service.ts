@@ -16,7 +16,10 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: { employee: true },
+    });
 
     if (!user) {
       throw new UnauthorizedException('Credenciales incorrectas');
@@ -38,7 +41,7 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
       user: {
         id: user.id,
-        name: user.name,
+        name: user.employee?.name ?? user.email,
         email: user.email,
         role: user.role,
       },

@@ -109,7 +109,7 @@ export class NotificationsService {
   }
 
   async notifyNewIncident(
-    incident: Incident & { user: User },
+    incident: Incident & { user: User & { name: string } },
   ): Promise<void> {
 
     const supervisors =

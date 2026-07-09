@@ -66,6 +66,10 @@ export default function DashboardPage() {
     const date = new Date(y, m - 1, day);
     return { label: WEEKDAYS[date.getDay()], count: d.count };
   });
+  const maxIncidents = Math.max(
+    1,
+    ...incidentsByDay.map((d) => d.count),
+  );
 
   return (
     <div className="dashboard-container">
@@ -211,12 +215,21 @@ export default function DashboardPage() {
                   position: "top",
                   style: { fontWeight: 600, fill: "#1f1f1f" },
                 }}
-                yAxis={{
-                  tickInterval: 1,
-                  label: { formatter: (v: string) => v },
+                scale={{
+                  y: {
+                    domain: [0, maxIncidents],
+                    tickMethod: (min: number, max: number) => {
+                      const ticks = [];
+                      for (let i = Math.ceil(min); i <= Math.floor(max); i++) {
+                        ticks.push(i);
+                      }
+                      return ticks;
+                    },
+                  },
                 }}
-                xAxis={{
-                  label: { autoRotate: false },
+                axis={{
+                  y: { label: { formatter: (v: string) => v } },
+                  x: { label: { autoRotate: false } },
                 }}
               />
             </div>

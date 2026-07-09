@@ -8,14 +8,11 @@ import {
   message,
   Row,
   Col,
-  Statistic,
-  Steps,
 } from "antd";
 
 import {
   LoginOutlined,
   LogoutOutlined,
-  ClockCircleOutlined,
   CoffeeOutlined,
   PlayCircleOutlined,
 } from "@ant-design/icons";
@@ -110,6 +107,10 @@ const getStage = (
 
 export default function MyAttendancePage() {
 
+  const user = JSON.parse(
+    localStorage.getItem("user") || "{}",
+  );
+
   const [open, setOpen] =
     useState<any | null>(null);
 
@@ -138,7 +139,7 @@ export default function MyAttendancePage() {
     load();
     const t = setInterval(
       () => setNow(dayjs()),
-      30000,
+      1000,
     );
     return () => clearInterval(t);
   }, []);
@@ -174,16 +175,22 @@ export default function MyAttendancePage() {
       )
     : 0;
 
-  const stepCurrent =
-    stage === "NONE"
-      ? 0
-      : stage === "WORKING"
-        ? 1
-        : stage === "ON_BREAK"
-          ? 2
-          : stage === "BACK_FROM_BREAK"
-            ? 3
-            : 4;
+  const stageLabel = {
+    NONE: "Sin turno activo",
+    WORKING: "Estás trabajando",
+    ON_BREAK: "Estás en el almuerzo",
+    BACK_FROM_BREAK: "Volviste del almuerzo",
+    FINISHED: "Jornada finalizada",
+  }[stage];
+
+  const todayLabel = (() => {
+    const raw = now.toDate().toLocaleDateString("es-EC", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  })();
 
   return (
     <Space
@@ -193,108 +200,87 @@ export default function MyAttendancePage() {
     >
 
       <Card>
-        <Row
-          gutter={[16, 16]}
-          align="middle"
-        >
-          <Col xs={24} md={12}>
-            <Title
-              level={4}
-              style={{ margin: 0 }}
-            >
-              {stage === "NONE"
-                ? "Sin turno activo"
-                : stage === "WORKING"
-                  ? "Estás trabajando"
-                  : stage === "ON_BREAK"
-                    ? "Estás en el almuerzo"
-                    : "Volviste del almuerzo"}
-            </Title>
-            <Text type="secondary">
-              {dayjs().format(
-                "dddd DD/MM/YYYY HH:mm",
-              )}
-            </Text>
-          </Col>
-
-          <Col xs={24} md={12}>
-            {open && (
-              <Statistic
-                title="Tiempo trabajado"
-                value={formatDuration(
-                  workedMinutes,
-                )}
-                prefix={
-                  <ClockCircleOutlined
-                    style={{
-                      color:
-                        stage ===
-                        "ON_BREAK"
-                          ? "#fa8c16"
-                          : "#52c41a",
-                    }}
-                  />
-                }
-              />
-            )}
-          </Col>
-        </Row>
-
-        <div
-          style={{ marginTop: 24 }}
-        >
-          <Steps
-            size="small"
-            current={stepCurrent}
-            items={[
-              {
-                title: "Entrada",
-                description: open
-                  ? formatTime(
-                      open.checkIn,
-                    )
-                  : "",
-              },
-              {
-                title: "Almuerzo",
-                description:
-                  open?.breakStart
-                    ? formatTime(
-                        open.breakStart,
-                      )
-                    : "",
-              },
-              {
-                title: "Regreso del almuerzo",
-                description:
-                  open?.breakEnd
-                    ? formatTime(
-                        open.breakEnd,
-                      )
-                    : "",
-              },
-              {
-                title: "Salida",
-                description:
-                  open?.checkOut
-                    ? formatTime(
-                        open.checkOut,
-                      )
-                    : "",
-              },
-            ]}
-          />
+        <div style={{ textAlign: "center" }}>
+          <Title level={3} style={{ margin: 0 }}>
+            Hola, {user.name || "Colaborador"}
+          </Title>
+          <Text type="secondary">
+            {stageLabel} · {todayLabel}
+          </Text>
         </div>
 
         <div
           style={{
-            marginTop: 32,
             textAlign: "center",
+            margin: "28px 0",
+          }}
+        >
+          <Text
+            type="secondary"
+            style={{ letterSpacing: 2, fontSize: 12 }}
+          >
+            HORA ACTUAL
+          </Text>
+          <div
+            style={{
+              fontSize: 56,
+              fontWeight: 700,
+              fontFamily:
+                "'Courier New', monospace",
+              lineHeight: 1.1,
+            }}
+          >
+            {now.format("HH:mm:ss")}
+          </div>
+          {open && (
+            <Text type="secondary">
+              Tiempo trabajado: {formatDuration(workedMinutes)}
+            </Text>
+          )}
+        </div>
+
+        {open && (
+          <Row
+            justify="center"
+            gutter={[8, 8]}
+            style={{ marginBottom: 24 }}
+          >
+            <Col>
+              <Tag color="blue">
+                Entrada {formatTime(open.checkIn)}
+              </Tag>
+            </Col>
+            {open.breakStart && (
+              <Col>
+                <Tag color="orange">
+                  Almuerzo {formatTime(open.breakStart)}
+                </Tag>
+              </Col>
+            )}
+            {open.breakEnd && (
+              <Col>
+                <Tag color="green">
+                  Regreso {formatTime(open.breakEnd)}
+                </Tag>
+              </Col>
+            )}
+          </Row>
+        )}
+
+        <Space
+          direction="vertical"
+          size="middle"
+          style={{
+            width: "100%",
+            maxWidth: 420,
+            margin: "0 auto",
+            display: "flex",
           }}
         >
           {stage === "NONE" && (
             <Button
               type="primary"
+              block
               size="large"
               icon={
                 <LoginOutlined />
@@ -309,7 +295,6 @@ export default function MyAttendancePage() {
               style={{
                 height: 60,
                 fontSize: 18,
-                padding: "0 40px",
               }}
             >
               Marcar Entrada
@@ -317,34 +302,11 @@ export default function MyAttendancePage() {
           )}
 
           {stage === "WORKING" && (
-            <Space size="middle">
-              <Button
-                type="primary"
-                size="large"
-                icon={
-                  <CoffeeOutlined />
-                }
-                loading={submitting}
-                onClick={() =>
-                  callAction(
-                    "/attendances/break-start",
-                    "Almuerzo iniciado",
-                  )
-                }
-                style={{
-                  height: 60,
-                  fontSize: 16,
-                  padding: "0 24px",
-                  background:
-                    "#fa8c16",
-                  borderColor:
-                    "#fa8c16",
-                }}
-              >
-                Salir al almuerzo
-              </Button>
+            <>
               <Button
                 danger
+                type="primary"
+                block
                 size="large"
                 icon={
                   <LogoutOutlined />
@@ -358,18 +320,43 @@ export default function MyAttendancePage() {
                 }
                 style={{
                   height: 60,
-                  fontSize: 16,
-                  padding: "0 24px",
+                  fontSize: 18,
                 }}
               >
-                Marcar Salida
+                Finalizar Jornada
               </Button>
-            </Space>
+              <Button
+                block
+                size="large"
+                icon={
+                  <CoffeeOutlined />
+                }
+                loading={submitting}
+                onClick={() =>
+                  callAction(
+                    "/attendances/break-start",
+                    "Almuerzo iniciado",
+                  )
+                }
+                style={{
+                  height: 56,
+                  fontSize: 16,
+                  background:
+                    "#fa8c16",
+                  borderColor:
+                    "#fa8c16",
+                  color: "#fff",
+                }}
+              >
+                Inicio Almuerzo
+              </Button>
+            </>
           )}
 
           {stage === "ON_BREAK" && (
             <Button
               type="primary"
+              block
               size="large"
               icon={
                 <PlayCircleOutlined />
@@ -384,12 +371,11 @@ export default function MyAttendancePage() {
               style={{
                 height: 60,
                 fontSize: 18,
-                padding: "0 40px",
                 background: "#52c41a",
                 borderColor: "#52c41a",
               }}
             >
-              Volver del almuerzo
+              Volver del Almuerzo
             </Button>
           )}
 
@@ -398,6 +384,7 @@ export default function MyAttendancePage() {
             <Button
               type="primary"
               danger
+              block
               size="large"
               icon={
                 <LogoutOutlined />
@@ -412,13 +399,12 @@ export default function MyAttendancePage() {
               style={{
                 height: 60,
                 fontSize: 18,
-                padding: "0 40px",
               }}
             >
-              Marcar Salida
+              Finalizar Jornada
             </Button>
           )}
-        </div>
+        </Space>
 
       </Card>
 

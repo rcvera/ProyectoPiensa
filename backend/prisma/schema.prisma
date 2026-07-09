@@ -38,7 +38,7 @@ model Position {
   name   String  @unique
   active Boolean @default(true)
 
-  users User[]
+  employees Employee[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -47,18 +47,14 @@ model Position {
 model User {
   id String @id @default(uuid())
 
-  name     String
-  email    String  @unique
+  email    String @unique
   password String
-  cedula   String? @unique
 
   role Role @default(EMPLOYEE)
 
   active Boolean @default(true)
 
-  phone      String?
-  positionId String?
-  position   Position? @relation(fields: [positionId], references: [id])
+  employee Employee?
 
   assignments       Assignment[]
   attendances       Attendance[]
@@ -67,6 +63,23 @@ model User {
   reviewedIncidents Incident[]       @relation("ReviewerIncidents")
   notifications     Notification[]
   workloadSurveys   WorkloadSurvey[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Employee {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  name   String
+  cedula String? @unique
+  phone  String?
+
+  positionId String?
+  position   Position? @relation(fields: [positionId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

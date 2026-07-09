@@ -79,15 +79,16 @@ export class OvertimesService {
 
         const user = await this.prisma.user.findUnique({
           where: { id: attendance.userId },
-          select: { name: true, email: true },
+          select: { email: true, employee: { select: { name: true } } },
         });
+        const userName = user?.employee?.name ?? user?.email;
 
         if (admins.length > 0 && user) {
           await this.prisma.notification.createMany({
             data: admins.map((a) => ({
               userId: a.id,
               title: '⚠️ Empleado con sobrecarga laboral',
-              message: `${user.name} ha superado las ${MONTHLY_OVERTIME_LIMIT} horas extra en ${month}/${year} (total: ${totalMonthly.toFixed(1)} h).`,
+              message: `${userName} ha superado las ${MONTHLY_OVERTIME_LIMIT} horas extra en ${month}/${year} (total: ${totalMonthly.toFixed(1)} h).`,
             })),
           });
         }
@@ -98,7 +99,7 @@ export class OvertimesService {
         // Notificar al empleado por correo
         if (user) {
           await this.mail.sendWorkloadSurveyAlert(
-            user.name,
+            userName!,
             user.email,
             totalMonthly,
             MONTHLY_OVERTIME_LIMIT,
@@ -113,9 +114,27 @@ export class OvertimesService {
   }
 
   async findAll() {
-    return this.prisma.overtime.findMany({
-      include: { user: true },
+    const records = await this.prisma.overtime.findMany({
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            role: true,
+            active: true,
+            employee: { select: { name: true } },
+          },
+        },
+      },
       orderBy: { date: 'desc' },
+    });
+
+    return records.map((r) => {
+      const { employee, ...user } = r.user;
+      return {
+        ...r,
+        user: { ...user, name: employee?.name ?? user.email },
+      };
     });
   }
 

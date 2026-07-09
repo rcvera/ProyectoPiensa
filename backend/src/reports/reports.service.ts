@@ -9,16 +9,143 @@ export class ReportsService {
     private prisma: PrismaService,
   ) {}
 
+  private readonly ROLE_LABELS: Record<string, string> = {
+    ADMIN: 'Administrador',
+    SUPERVISOR: 'Supervisor',
+    EMPLOYEE: 'Empleado',
+  };
+
   async getEmployees() {
-    return this.prisma.user.findMany();
+    const users = await this.prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        active: true,
+        employee: {
+          select: {
+            name: true,
+            cedula: true,
+            phone: true,
+            position: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { employee: { name: 'asc' } },
+    });
+    return users.map((u) => ({
+      ...u,
+      name: u.employee?.name ?? u.email,
+      cedula: u.employee?.cedula ?? '',
+      phone: u.employee?.phone ?? '',
+      position: u.employee?.position?.name ?? '',
+      roleLabel: this.ROLE_LABELS[u.role] ?? u.role,
+    }));
   }
 
   async getOvertimes() {
-    return this.prisma.overtime.findMany({
+    const records = await this.prisma.overtime.findMany({
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            email: true,
+            employee: { select: { name: true } },
+          },
+        },
       },
+      orderBy: { date: 'desc' },
     });
+    return records.map((o) => ({
+      ...o,
+      user: {
+        ...o.user,
+        name: o.user.employee?.name ?? o.user.email,
+      },
+    }));
+  }
+
+  private styleExcelSheet(
+    workbook: ExcelJS.Workbook,
+    sheetName: string,
+    title: string,
+    columns: { header: string; key: string; width: number }[],
+    rows: Record<string, any>[],
+  ) {
+    const sheet = workbook.addWorksheet(sheetName, {
+      views: [{ state: 'frozen', ySplit: 4 }],
+    });
+
+    const lastCol = String.fromCharCode(
+      64 + columns.length,
+    );
+
+    sheet.mergeCells(`A1:${lastCol}1`);
+    sheet.getCell('A1').value = 'AutoWash Control';
+    sheet.getCell('A1').font = {
+      size: 16,
+      bold: true,
+      color: { argb: 'FF1677FF' },
+    };
+
+    sheet.mergeCells(`A2:${lastCol}2`);
+    sheet.getCell('A2').value = title;
+    sheet.getCell('A2').font = { size: 12, bold: true };
+
+    sheet.mergeCells(`A3:${lastCol}3`);
+    sheet.getCell('A3').value =
+      `Generado el ${new Date().toLocaleString('es-EC', { dateStyle: 'long', timeStyle: 'short' })}`;
+    sheet.getCell('A3').font = {
+      size: 9,
+      italic: true,
+      color: { argb: 'FF888888' },
+    };
+
+    sheet.columns = columns.map((c) => ({
+      key: c.key,
+      width: c.width,
+    }));
+
+    const headerRow = sheet.getRow(4);
+    columns.forEach((c, i) => {
+      const cell = headerRow.getCell(i + 1);
+      cell.value = c.header;
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1677FF' },
+      };
+      cell.alignment = { vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+        bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+        left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+        right: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+      };
+    });
+    headerRow.height = 20;
+
+    rows.forEach((row, i) => {
+      const excelRow = sheet.addRow(row);
+      excelRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFF0F0F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFF0F0F0' } },
+          left: { style: 'thin', color: { argb: 'FFF0F0F0' } },
+          right: { style: 'thin', color: { argb: 'FFF0F0F0' } },
+        };
+        if (i % 2 === 1) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF5F7FA' },
+          };
+        }
+      });
+    });
+
+    return sheet;
   }
 
   async generateEmployeesExcel() {
@@ -28,41 +155,32 @@ export class ReportsService {
 
     const workbook =
       new ExcelJS.Workbook();
+    workbook.creator = 'AutoWash Control';
+    workbook.created = new Date();
 
-    const sheet =
-      workbook.addWorksheet(
-        'Empleados',
-      );
-
-    sheet.columns = [
-      {
-        header: 'Nombre',
-        key: 'name',
-      },
-      {
-        header: 'Correo',
-        key: 'email',
-      },
-      {
-        header: 'Rol',
-        key: 'role',
-      },
-      {
-        header: 'Estado',
-        key: 'active',
-      },
-    ];
-
-    employees.forEach((e) => {
-      sheet.addRow({
+    this.styleExcelSheet(
+      workbook,
+      'Empleados',
+      'Reporte de Empleados',
+      [
+        { header: 'Nombre', key: 'name', width: 28 },
+        { header: 'Cédula', key: 'cedula', width: 16 },
+        { header: 'Correo', key: 'email', width: 30 },
+        { header: 'Rol', key: 'roleLabel', width: 16 },
+        { header: 'Cargo', key: 'position', width: 20 },
+        { header: 'Teléfono', key: 'phone', width: 16 },
+        { header: 'Estado', key: 'active', width: 12 },
+      ],
+      employees.map((e) => ({
         name: e.name,
+        cedula: e.cedula || '—',
         email: e.email,
-        active:
-          e.active
-            ? 'Activo'
-            : 'Inactivo',
-      });
-    });
+        roleLabel: e.roleLabel,
+        position: e.position || '—',
+        phone: e.phone || '—',
+        active: e.active ? 'Activo' : 'Inactivo',
+      })),
+    );
 
     return workbook.xlsx.writeBuffer();
   }
@@ -74,39 +192,156 @@ export class ReportsService {
 
     const workbook =
       new ExcelJS.Workbook();
+    workbook.creator = 'AutoWash Control';
+    workbook.created = new Date();
 
-    const sheet =
-      workbook.addWorksheet(
-        'Horas Extras',
-      );
-
-    sheet.columns = [
-      {
-        header: 'Empleado',
-        key: 'employee',
-      },
-      {
-        header: 'Horas Trabajadas',
-        key: 'worked',
-      },
-      {
-        header: 'Horas Extras',
-        key: 'overtime',
-      },
-    ];
-
-    data.forEach((o) => {
-      sheet.addRow({
-        employee:
-          o.user.name,
-        worked:
-          o.workedHours,
-        overtime:
-          o.overtimeHours,
-      });
-    });
+    this.styleExcelSheet(
+      workbook,
+      'Horas Extras',
+      'Reporte de Horas Extras',
+      [
+        { header: 'Empleado', key: 'employee', width: 28 },
+        { header: 'Fecha', key: 'date', width: 16 },
+        { header: 'Horas Trabajadas', key: 'worked', width: 18 },
+        { header: 'Horas Extras', key: 'overtime', width: 16 },
+      ],
+      data.map((o) => ({
+        employee: o.user.name,
+        date: new Date(o.date).toLocaleDateString('es-EC'),
+        worked: Math.round(o.workedHours * 10) / 10,
+        overtime: Math.round(o.overtimeHours * 10) / 10,
+      })),
+    );
 
     return workbook.xlsx.writeBuffer();
+  }
+
+  private drawPdfHeader(
+    doc: PDFKit.PDFDocument,
+    title: string,
+    subtitle: string,
+  ) {
+    const left = doc.page.margins.left;
+    const right = doc.page.width - doc.page.margins.right;
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(18)
+      .fillColor('#1677ff')
+      .text('AutoWash Control', left, 40);
+
+    doc
+      .font('Helvetica')
+      .fontSize(9)
+      .fillColor('#888888')
+      .text('Sistema de Gestión de Turnos', left, 62);
+
+    doc
+      .font('Helvetica-Bold')
+      .fontSize(14)
+      .fillColor('#1f1f1f')
+      .text(title, left, 92);
+
+    doc
+      .font('Helvetica')
+      .fontSize(9)
+      .fillColor('#888888')
+      .text(
+        `Generado el ${new Date().toLocaleString('es-EC', { dateStyle: 'long', timeStyle: 'short' })} · ${subtitle}`,
+        left,
+        112,
+      );
+
+    doc
+      .moveTo(left, 132)
+      .lineTo(right, 132)
+      .strokeColor('#e0e0e0')
+      .lineWidth(1)
+      .stroke();
+
+    return 145;
+  }
+
+  private drawPdfTable(
+    doc: PDFKit.PDFDocument,
+    startY: number,
+    columns: { header: string; key: string; width: number; align?: 'left' | 'right' | 'center' }[],
+    rows: Record<string, any>[],
+  ) {
+    const left = doc.page.margins.left;
+    const tableWidth = columns.reduce((s, c) => s + c.width, 0);
+    const rowHeight = 22;
+    const pageBottom = doc.page.height - doc.page.margins.bottom;
+
+    const drawHeaderRow = (y: number) => {
+      doc.rect(left, y, tableWidth, rowHeight).fill('#1677ff');
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('#ffffff');
+      let x = left;
+      columns.forEach((c) => {
+        doc.text(c.header, x + 6, y + 7, {
+          width: c.width - 12,
+          align: c.align ?? 'left',
+        });
+        x += c.width;
+      });
+      return y + rowHeight;
+    };
+
+    let y = drawHeaderRow(startY);
+    doc.font('Helvetica').fontSize(9);
+
+    rows.forEach((row, i) => {
+      if (y + rowHeight > pageBottom) {
+        doc.addPage();
+        y = drawHeaderRow(doc.page.margins.top);
+        doc.font('Helvetica').fontSize(9);
+      }
+
+      if (i % 2 === 1) {
+        doc.rect(left, y, tableWidth, rowHeight).fill('#f5f7fa');
+      }
+
+      doc.fillColor('#1f1f1f');
+      let x = left;
+      columns.forEach((c) => {
+        doc.text(String(row[c.key] ?? '—'), x + 6, y + 7, {
+          width: c.width - 12,
+          align: c.align ?? 'left',
+        });
+        x += c.width;
+      });
+      y += rowHeight;
+    });
+
+    doc
+      .moveTo(left, y)
+      .lineTo(left + tableWidth, y)
+      .strokeColor('#e0e0e0')
+      .stroke();
+
+    return y;
+  }
+
+  private drawPdfFooters(doc: PDFKit.PDFDocument) {
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      const bottom = doc.page.height - doc.page.margins.bottom - 12;
+      doc
+        .font('Helvetica')
+        .fontSize(8)
+        .fillColor('#aaaaaa')
+        .text(
+          `Página ${i + 1} de ${range.count}`,
+          doc.page.margins.left,
+          bottom,
+          {
+            width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+            align: 'center',
+            lineBreak: false,
+          },
+        );
+    }
   }
 
   async generateEmployeesPDF() {
@@ -114,46 +349,47 @@ export class ReportsService {
     const employees =
       await this.getEmployees();
 
-    const doc =
-      new PDFDocument();
-
-    const buffers = [];
-
-    doc.on(
-      'data',
-      buffers.push.bind(buffers),
-    );
-
-    doc.fontSize(20);
-
-    doc.text(
-      'Reporte de Empleados',
-    );
-
-    doc.moveDown();
-
-    employees.forEach((e) => {
-      doc.text(
-        `${e.name} - ${e.email}`,
-      );
+    const doc = new PDFDocument({
+      margin: 40,
+      bufferPages: true,
     });
 
+    const buffers: Buffer[] = [];
+    doc.on('data', buffers.push.bind(buffers));
+
+    const startY = this.drawPdfHeader(
+      doc,
+      'Reporte de Empleados',
+      `${employees.length} empleado(s)`,
+    );
+
+    this.drawPdfTable(
+      doc,
+      startY,
+      [
+        { header: 'Nombre', key: 'name', width: 125 },
+        { header: 'Cédula', key: 'cedula', width: 70 },
+        { header: 'Correo', key: 'email', width: 130 },
+        { header: 'Rol', key: 'roleLabel', width: 70 },
+        { header: 'Cargo', key: 'position', width: 65 },
+        { header: 'Estado', key: 'active', width: 52 },
+      ],
+      employees.map((e) => ({
+        name: e.name,
+        cedula: e.cedula || '—',
+        email: e.email,
+        roleLabel: e.roleLabel,
+        position: e.position || '—',
+        active: e.active ? 'Activo' : 'Inactivo',
+      })),
+    );
+
+    this.drawPdfFooters(doc);
     doc.end();
 
-    return new Promise<Buffer>(
-      (resolve) => {
-        doc.on(
-          'end',
-          () => {
-            resolve(
-              Buffer.concat(
-                buffers,
-              ),
-            );
-          },
-        );
-      },
-    );
+    return new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+    });
   }
 
   async generateOvertimePDF() {
@@ -161,45 +397,47 @@ export class ReportsService {
     const data =
       await this.getOvertimes();
 
-    const doc =
-      new PDFDocument();
-
-    const buffers = [];
-
-    doc.on(
-      'data',
-      buffers.push.bind(buffers),
-    );
-
-    doc.fontSize(20);
-
-    doc.text(
-      'Reporte Horas Extras',
-    );
-
-    doc.moveDown();
-
-    data.forEach((o) => {
-      doc.text(
-        `${o.user.name} | Horas Extras: ${o.overtimeHours}`,
-      );
+    const doc = new PDFDocument({
+      margin: 40,
+      bufferPages: true,
     });
 
+    const buffers: Buffer[] = [];
+    doc.on('data', buffers.push.bind(buffers));
+
+    const totalOvertime = data.reduce(
+      (s, o) => s + o.overtimeHours,
+      0,
+    );
+
+    const startY = this.drawPdfHeader(
+      doc,
+      'Reporte de Horas Extras',
+      `${data.length} registro(s) · ${Math.round(totalOvertime * 10) / 10}h extra en total`,
+    );
+
+    this.drawPdfTable(
+      doc,
+      startY,
+      [
+        { header: 'Empleado', key: 'employee', width: 200 },
+        { header: 'Fecha', key: 'date', width: 105 },
+        { header: 'H. Trabajadas', key: 'worked', width: 100, align: 'right' },
+        { header: 'H. Extras', key: 'overtime', width: 90, align: 'right' },
+      ],
+      data.map((o) => ({
+        employee: o.user.name,
+        date: new Date(o.date).toLocaleDateString('es-EC'),
+        worked: (Math.round(o.workedHours * 10) / 10).toFixed(1),
+        overtime: (Math.round(o.overtimeHours * 10) / 10).toFixed(1),
+      })),
+    );
+
+    this.drawPdfFooters(doc);
     doc.end();
 
-    return new Promise<Buffer>(
-      (resolve) => {
-        doc.on(
-          'end',
-          () => {
-            resolve(
-              Buffer.concat(
-                buffers,
-              ),
-            );
-          },
-        );
-      },
-    );
+    return new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+    });
   }
 }

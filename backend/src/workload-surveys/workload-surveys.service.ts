@@ -17,9 +17,22 @@ export class WorkloadSurveysService {
   }
 
   async findAll() {
-    return this.prisma.workloadSurvey.findMany({
-      include: { user: { select: { id: true, name: true, email: true } } },
+    const records = await this.prisma.workloadSurvey.findMany({
+      include: {
+        user: {
+          select: { id: true, email: true, employee: { select: { name: true } } },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
+
+    return records.map((r) => ({
+      ...r,
+      user: {
+        id: r.user.id,
+        email: r.user.email,
+        name: r.user.employee?.name ?? r.user.email,
+      },
+    }));
   }
 }

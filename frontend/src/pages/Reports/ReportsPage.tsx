@@ -3,6 +3,7 @@ import {
   Button,
   Row,
   Col,
+  message,
 } from "antd";
 
 import {
@@ -10,18 +11,44 @@ import {
   FileExcelOutlined,
 } from "@ant-design/icons";
 
-import { API_URL } from "../../api/config";
+import { useState } from "react";
+
+import { api } from "../../services/auth.service";
 import "./ReportsPage.css";
 
 export default function ReportsPage() {
 
-  const download =
-    (url: string) => {
-      window.open(
-        url,
-        "_blank",
+  const [loading, setLoading] =
+    useState<string | null>(null);
+
+  const download = async (
+    path: string,
+    filename: string,
+  ) => {
+    try {
+      setLoading(path);
+      const response = await api.get(path, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(
+        new Blob([response.data]),
       );
-    };
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e: any) {
+      message.error(
+        e?.response?.data?.message ||
+          "No se pudo descargar el reporte",
+      );
+    } finally {
+      setLoading(null);
+    }
+  };
 
   return (
     <Card title="Reportes">
@@ -36,9 +63,14 @@ export default function ReportsPage() {
                 <FilePdfOutlined />
               }
               block
+              loading={
+                loading ===
+                "/reports/employees/pdf"
+              }
               onClick={() =>
                 download(
-                  `${API_URL}/reports/employees/pdf`,
+                  "/reports/employees/pdf",
+                  "empleados.pdf",
                 )
               }
             >
@@ -53,9 +85,14 @@ export default function ReportsPage() {
                 <FileExcelOutlined />
               }
               block
+              loading={
+                loading ===
+                "/reports/employees/excel"
+              }
               onClick={() =>
                 download(
-                  `${API_URL}/reports/employees/excel`,
+                  "/reports/employees/excel",
+                  "empleados.xlsx",
                 )
               }
             >
@@ -73,9 +110,14 @@ export default function ReportsPage() {
                 <FilePdfOutlined />
               }
               block
+              loading={
+                loading ===
+                "/reports/overtimes/pdf"
+              }
               onClick={() =>
                 download(
-                  `${API_URL}/reports/overtimes/pdf`,
+                  "/reports/overtimes/pdf",
+                  "horas-extras.pdf",
                 )
               }
             >
@@ -90,9 +132,14 @@ export default function ReportsPage() {
                 <FileExcelOutlined />
               }
               block
+              loading={
+                loading ===
+                "/reports/overtimes/excel"
+              }
               onClick={() =>
                 download(
-                  `${API_URL}/reports/overtimes/excel`,
+                  "/reports/overtimes/excel",
+                  "horas-extras.xlsx",
                 )
               }
             >

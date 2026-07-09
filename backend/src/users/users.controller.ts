@@ -75,4 +75,12 @@ export class UsersController {
       true,
     );
   }
+
+  @Roles('ADMIN')
+  @Patch(':id/reset-password')
+  resetPassword(
+    @Param('id') id: string,
+  ) {
+    return this.usersService.resetPassword(id);
+  }
 }

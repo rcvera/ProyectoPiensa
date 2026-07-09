@@ -34,19 +34,26 @@ export class AttendancesService {
     const assignment = await this.prisma.assignment.findFirst({
       where: {
         userId,
+        published: true,
         date: { gte: todayStart, lte: todayEnd },
       },
       include: { shift: true },
     });
 
-    if (assignment?.shift?.startTime) {
+    if (!assignment) {
+      throw new BadRequestException(
+        'No tenés un turno planificado para hoy. Consultá tu horario o contactá a tu supervisor.',
+      );
+    }
+
+    if (assignment.shift?.startTime) {
       const [shiftHour, shiftMin] = assignment.shift.startTime.split(':').map(Number);
       const shiftMinutes = shiftHour * 60 + shiftMin;
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
       if (nowMinutes < shiftMinutes) {
         throw new BadRequestException(
-          `Tu turno comienza a las ${assignment.shift.startTime}. No puedes marcar entrada antes de esa hora.`,
+          `Tu turno comienza a las ${assignment.shift.startTime}. No podés marcar entrada antes de esa hora.`,
         );
       }
     }
@@ -192,15 +199,19 @@ export class AttendancesService {
       }
     }
 
-    return this.prisma.attendance.findMany({
+    const records = await this.prisma.attendance.findMany({
       where,
       include: {
         user: {
           select: {
             id: true,
-            name: true,
             email: true,
-            position: { select: { id: true, name: true } },
+            employee: {
+              select: {
+                name: true,
+                position: { select: { id: true, name: true } },
+              },
+            },
           },
         },
       },
@@ -208,6 +219,16 @@ export class AttendancesService {
         checkIn: 'desc',
       },
     });
+
+    return records.map((r) => ({
+      ...r,
+      user: {
+        id: r.user.id,
+        email: r.user.email,
+        name: r.user.employee?.name ?? r.user.email,
+        position: r.user.employee?.position ?? null,
+      },
+    }));
   }
 
   async findOpenForUser(
