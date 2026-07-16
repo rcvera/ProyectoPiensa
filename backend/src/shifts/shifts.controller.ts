@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('shifts')
 export class ShiftsController {
 
@@ -25,7 +26,6 @@ export class ShiftsController {
     private readonly shiftsService: ShiftsService,
   ) {}
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Post()
   create(
@@ -40,7 +40,6 @@ export class ShiftsController {
     return this.shiftsService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id')
   update(
@@ -50,7 +49,6 @@ export class ShiftsController {
     return this.shiftsService.update(id, dto);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Delete(':id')
   deactivate(
@@ -62,7 +60,6 @@ export class ShiftsController {
     );
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch(':id/activate')
   activate(

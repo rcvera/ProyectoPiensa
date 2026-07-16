@@ -15,8 +15,10 @@ import { AssignmentsService } from './assignments.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import type { AuthRequest } from '../auth/types/auth-request.type';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('assignments')
 export class AssignmentsController {
 
@@ -45,7 +47,6 @@ export class AssignmentsController {
     );
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('mine')
   findMine(
     @Req() request: AuthRequest,
