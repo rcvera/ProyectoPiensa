@@ -55,6 +55,22 @@ export default function OvertimesPage() {
             ),
           },
           {
+            title:"Recargo 50% (diurno)",
+            render:(_:any,r:any)=>(
+              <Tag color="gold">
+                {Number(r.overtimeHours50 ?? 0).toFixed(2)}
+              </Tag>
+            ),
+          },
+          {
+            title:"Recargo 100% (nocturno/fin de semana)",
+            render:(_:any,r:any)=>(
+              <Tag color="red">
+                {Number(r.overtimeHours100 ?? 0).toFixed(2)}
+              </Tag>
+            ),
+          },
+          {
             title:"Fecha",
             dataIndex:"date",
             render:(date:string)=>

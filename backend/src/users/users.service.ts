@@ -42,6 +42,7 @@ const USER_SELECT = {
       phone: true,
       positionId: true,
       position: { select: { id: true, name: true } },
+      baseSalary: true,
     },
   },
 };
@@ -57,6 +58,7 @@ function flattenUser(user: any) {
     phone: employee?.phone ?? null,
     positionId: employee?.positionId ?? null,
     position: employee?.position ?? null,
+    baseSalary: employee?.baseSalary ?? null,
   };
 }
 
@@ -101,6 +103,7 @@ export class UsersService {
             cedula: createUserDto.cedula,
             phone: createUserDto.phone,
             positionId: createUserDto.positionId,
+            baseSalary: createUserDto.baseSalary,
           },
         },
       },
@@ -165,6 +168,7 @@ export class UsersService {
       cedula: dto.cedula,
       phone: dto.phone,
       positionId: dto.positionId ?? null,
+      baseSalary: dto.baseSalary,
     };
 
     [userData, employeeData].forEach((data) => {

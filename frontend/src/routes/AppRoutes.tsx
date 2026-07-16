@@ -23,6 +23,7 @@ import IncidentDetail from "../pages/Incidents/IncidentDetail";
 import MySchedulePage from "../pages/MySchedule/MySchedulePage";
 import MyAttendancePage from "../pages/MyAttendance/MyAttendancePage";
 import PositionsPage from "../pages/Positions/PositionsPage";
+import PayrollPage from "../pages/Payroll/PayrollPage";
 
 export default function AppRoutes() {
   return (
@@ -98,6 +99,10 @@ export default function AppRoutes() {
           <Route
             path="/positions"
             element={<PositionsPage />}
+          />
+          <Route
+            path="/payroll"
+            element={<PayrollPage />}
           />
         </Route>
 

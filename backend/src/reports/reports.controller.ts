@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -98,6 +99,94 @@ export class ReportsController {
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition':
         'attachment; filename=horas-extras.xlsx',
+    });
+
+    res.send(excel);
+  }
+
+  @Roles('ADMIN')
+  @Get('attendance/pdf')
+  async attendancePDF(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Res() res: Response,
+  ) {
+
+    const pdf =
+      await this.reportsService
+        .generateAttendancePDF(from, to);
+
+    res.set({
+      'Content-Type':
+        'application/pdf',
+      'Content-Disposition':
+        'attachment; filename=asistencia-faltas.pdf',
+    });
+
+    res.send(pdf);
+  }
+
+  @Roles('ADMIN')
+  @Get('attendance/excel')
+  async attendanceExcel(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @Res() res: Response,
+  ) {
+
+    const excel =
+      await this.reportsService
+        .generateAttendanceExcel(from, to);
+
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition':
+        'attachment; filename=asistencia-faltas.xlsx',
+    });
+
+    res.send(excel);
+  }
+
+  @Roles('ADMIN')
+  @Get('payroll/pdf')
+  async payrollPDF(
+    @Query('month') month: string,
+    @Query('year') year: string,
+    @Res() res: Response,
+  ) {
+
+    const pdf =
+      await this.reportsService
+        .generatePayrollPDF(Number(month), Number(year));
+
+    res.set({
+      'Content-Type':
+        'application/pdf',
+      'Content-Disposition':
+        'attachment; filename=rol-de-pagos.pdf',
+    });
+
+    res.send(pdf);
+  }
+
+  @Roles('ADMIN')
+  @Get('payroll/excel')
+  async payrollExcel(
+    @Query('month') month: string,
+    @Query('year') year: string,
+    @Res() res: Response,
+  ) {
+
+    const excel =
+      await this.reportsService
+        .generatePayrollExcel(Number(month), Number(year));
+
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition':
+        'attachment; filename=rol-de-pagos.xlsx',
     });
 
     res.send(excel);

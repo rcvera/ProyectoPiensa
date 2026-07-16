@@ -4,6 +4,8 @@ import {
   IsOptional,
   IsIn,
   IsBoolean,
+  IsNumber,
+  Min,
   MinLength,
   Matches,
 } from 'class-validator';
@@ -42,4 +44,9 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  baseSalary?: number;
 }

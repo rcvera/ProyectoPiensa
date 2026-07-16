@@ -22,10 +22,36 @@ export class OvertimesService {
 
     if (!attendance || !attendance.checkOut) return;
 
-    const workedHours =
-      (attendance.checkOut.getTime() - attendance.checkIn.getTime()) / 3600000;
+    const { checkIn, checkOut } = attendance;
 
-    const overtimeHours = Math.max(workedHours - 8, 0);
+    const workedHours = (checkOut.getTime() - checkIn.getTime()) / 3600000;
+
+    // Art. 52 del Código del Trabajo: el trabajo en sábado/domingo (descanso
+    // obligatorio) se recarga al 100% sobre TODAS las horas trabajadas ese
+    // día, no solo el excedente de 8h.
+    const isRestDay = checkIn.getDay() === 0 || checkIn.getDay() === 6;
+
+    let overtimeHours: number;
+    let overtimeHours50: number;
+    let overtimeHours100: number;
+
+    if (isRestDay) {
+      overtimeHours = workedHours;
+      overtimeHours50 = 0;
+      overtimeHours100 = workedHours;
+    } else {
+      // Art. 55: horas suplementarias (excedente de la jornada de 8h) se
+      // recargan al 50% en horario diurno (06:00-24:00) y al 100% en
+      // horario nocturno (00:00-06:00).
+      overtimeHours = Math.max(workedHours - 8, 0);
+      const overtimeStart = new Date(checkIn.getTime() + 8 * 3600000);
+      const nightHours =
+        overtimeHours > 0
+          ? Math.min(this.nocturnalHours(overtimeStart, checkOut), overtimeHours)
+          : 0;
+      overtimeHours100 = nightHours;
+      overtimeHours50 = overtimeHours - nightHours;
+    }
 
     const record = await this.prisma.overtime.create({
       data: {
@@ -33,6 +59,8 @@ export class OvertimesService {
         attendanceId: attendance.id,
         workedHours,
         overtimeHours,
+        overtimeHours50,
+        overtimeHours100,
         date: attendance.checkIn,
       },
     });
@@ -113,6 +141,34 @@ export class OvertimesService {
     return record;
   }
 
+  /** Horas de [start, end) que caen dentro del horario nocturno (00:00-06:00). */
+  private nocturnalHours(start: Date, end: Date): number {
+    if (end <= start) return 0;
+
+    let total = 0;
+    let cursor = start;
+
+    while (cursor < end) {
+      const dayStart = new Date(
+        cursor.getFullYear(),
+        cursor.getMonth(),
+        cursor.getDate(),
+      );
+      const nightEnd = new Date(dayStart.getTime() + 6 * 3600000);
+      const nextDayStart = new Date(dayStart.getTime() + 24 * 3600000);
+
+      const segStart = cursor > dayStart ? cursor : dayStart;
+      const segEnd = end < nightEnd ? end : nightEnd;
+      if (segEnd > segStart) {
+        total += (segEnd.getTime() - segStart.getTime()) / 3600000;
+      }
+
+      cursor = nextDayStart;
+    }
+
+    return total;
+  }
+
   async findAll() {
     const records = await this.prisma.overtime.findMany({
       include: {
@@ -149,10 +205,14 @@ export class OvertimesService {
 
     const workedHours = records.reduce((s, r) => s + r.workedHours, 0);
     const overtimeHours = records.reduce((s, r) => s + r.overtimeHours, 0);
+    const overtimeHours50 = records.reduce((s, r) => s + r.overtimeHours50, 0);
+    const overtimeHours100 = records.reduce((s, r) => s + r.overtimeHours100, 0);
 
     return {
       workedHours: Math.round(workedHours * 10) / 10,
       overtimeHours: Math.round(overtimeHours * 10) / 10,
+      overtimeHours50: Math.round(overtimeHours50 * 10) / 10,
+      overtimeHours100: Math.round(overtimeHours100 * 10) / 10,
     };
   }
 }

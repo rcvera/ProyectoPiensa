@@ -22,6 +22,7 @@ import {
   CalendarOutlined,
   ApartmentOutlined,
   LockOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -123,6 +124,11 @@ export default function MainLayout() {
       label: "Incidentes",
     },
     {
+      key: "/payroll",
+      icon: <DollarOutlined />,
+      label: "Nómina",
+    },
+    {
       key: "/reports",
       icon: <FileTextOutlined />,
       label: "Reportes",
@@ -178,6 +184,11 @@ export default function MainLayout() {
       key: "/incidents/mine",
       icon: <WarningOutlined />,
       label: "Mis Incidentes",
+    },
+    {
+      key: "/payroll",
+      icon: <DollarOutlined />,
+      label: "Mi Nómina",
     },
   ];
 

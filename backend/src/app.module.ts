@@ -15,6 +15,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PositionsModule } from './positions/positions.module';
 import { WorkloadSurveysModule } from './workload-surveys/workload-surveys.module';
 import { MailModule } from './mail/mail.module';
+import { PayrollModule } from './payroll/payroll.module';
 
 
 @Module({
@@ -33,6 +34,7 @@ import { MailModule } from './mail/mail.module';
     PositionsModule,
     WorkloadSurveysModule,
     MailModule,
+    PayrollModule,
   ],
   controllers: [AppController],
   providers: [AppService],

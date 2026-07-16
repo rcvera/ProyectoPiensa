@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PayrollService } from '../payroll/payroll.service';
 import * as ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 
@@ -7,6 +8,7 @@ import PDFDocument from 'pdfkit';
 export class ReportsService {
   constructor(
     private prisma: PrismaService,
+    private payrollService: PayrollService,
   ) {}
 
   private readonly ROLE_LABELS: Record<string, string> = {
@@ -63,6 +65,14 @@ export class ReportsService {
         name: o.user.employee?.name ?? o.user.email,
       },
     }));
+  }
+
+  async getAttendanceFaltas(from: string, to: string) {
+    return this.payrollService.getAttendanceFaltas(from, to);
+  }
+
+  async getPayroll(month: number, year: number) {
+    return this.payrollService.findAll(month, year);
   }
 
   private styleExcelSheet(
@@ -430,6 +440,182 @@ export class ReportsService {
         date: new Date(o.date).toLocaleDateString('es-EC'),
         worked: (Math.round(o.workedHours * 10) / 10).toFixed(1),
         overtime: (Math.round(o.overtimeHours * 10) / 10).toFixed(1),
+      })),
+    );
+
+    this.drawPdfFooters(doc);
+    doc.end();
+
+    return new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+    });
+  }
+
+  async generateAttendanceExcel(from: string, to: string) {
+
+    const data = await this.getAttendanceFaltas(from, to);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'AutoWash Control';
+    workbook.created = new Date();
+
+    this.styleExcelSheet(
+      workbook,
+      'Asistencia',
+      `Reporte de Asistencia (Faltas) · ${from} a ${to}`,
+      [
+        { header: 'Empleado', key: 'name', width: 28 },
+        { header: 'Correo', key: 'email', width: 30 },
+        { header: 'Días Esperados', key: 'expectedDays', width: 16 },
+        { header: 'Días Trabajados', key: 'workedDays', width: 16 },
+        { header: 'Faltas', key: 'absenceDays', width: 10 },
+        { header: 'Descuento Faltas', key: 'absenceDeduction', width: 16 },
+        { header: 'Atrasos (min)', key: 'lateMinutes', width: 14 },
+        { header: 'Descuento Atrasos', key: 'lateDeduction', width: 16 },
+      ],
+      data.map((r) => ({
+        name: r.name,
+        email: r.email,
+        expectedDays: r.expectedDays,
+        workedDays: r.workedDays,
+        absenceDays: r.absenceDays,
+        absenceDeduction: r.absenceDeduction != null ? `$${r.absenceDeduction.toFixed(2)}` : '—',
+        lateMinutes: r.lateMinutes,
+        lateDeduction: r.lateDeduction != null ? `$${r.lateDeduction.toFixed(2)}` : '—',
+      })),
+    );
+
+    return workbook.xlsx.writeBuffer();
+  }
+
+  async generateAttendancePDF(from: string, to: string) {
+
+    const data = await this.getAttendanceFaltas(from, to);
+
+    const doc = new PDFDocument({ margin: 40, bufferPages: true });
+    const buffers: Buffer[] = [];
+    doc.on('data', buffers.push.bind(buffers));
+
+    const totalFaltas = data.reduce((s, r) => s + r.absenceDays, 0);
+
+    const startY = this.drawPdfHeader(
+      doc,
+      'Reporte de Asistencia (Faltas)',
+      `${from} a ${to} · ${data.length} empleado(s) · ${totalFaltas} falta(s) en total`,
+    );
+
+    this.drawPdfTable(
+      doc,
+      startY,
+      [
+        { header: 'Empleado', key: 'name', width: 160 },
+        { header: 'Días Esp.', key: 'expectedDays', width: 60, align: 'right' },
+        { header: 'Días Trab.', key: 'workedDays', width: 60, align: 'right' },
+        { header: 'Faltas', key: 'absenceDays', width: 50, align: 'right' },
+        { header: 'Desc. Faltas', key: 'absenceDeduction', width: 80, align: 'right' },
+        { header: 'Atrasos (min)', key: 'lateMinutes', width: 70, align: 'right' },
+        { header: 'Desc. Atrasos', key: 'lateDeduction', width: 80, align: 'right' },
+      ],
+      data.map((r) => ({
+        name: r.name,
+        expectedDays: r.expectedDays,
+        workedDays: r.workedDays,
+        absenceDays: r.absenceDays,
+        absenceDeduction: r.absenceDeduction != null ? `$${r.absenceDeduction.toFixed(2)}` : '—',
+        lateMinutes: r.lateMinutes,
+        lateDeduction: r.lateDeduction != null ? `$${r.lateDeduction.toFixed(2)}` : '—',
+      })),
+    );
+
+    this.drawPdfFooters(doc);
+    doc.end();
+
+    return new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+    });
+  }
+
+  async generatePayrollExcel(month: number, year: number) {
+
+    const data = await this.getPayroll(month, year);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'AutoWash Control';
+    workbook.created = new Date();
+
+    this.styleExcelSheet(
+      workbook,
+      'Rol de Pagos',
+      `Reporte de Pago · ${month}/${year}`,
+      [
+        { header: 'Empleado', key: 'name', width: 28 },
+        { header: 'Sueldo Base', key: 'baseSalary', width: 14 },
+        { header: 'H. Extra 50%', key: 'overtimeHours50', width: 14 },
+        { header: 'H. Extra 100%', key: 'overtimeHours100', width: 14 },
+        { header: 'Pago H. Extra', key: 'overtimePay', width: 14 },
+        { header: 'Ingreso Bruto', key: 'grossIncome', width: 14 },
+        { header: 'IESS Personal', key: 'iessPersonal', width: 14 },
+        { header: 'Faltas', key: 'absenceDays', width: 10 },
+        { header: 'Desc. Faltas', key: 'absenceDeduction', width: 14 },
+        { header: 'Atrasos (min)', key: 'lateMinutes', width: 14 },
+        { header: 'Desc. Atrasos', key: 'lateDeduction', width: 14 },
+        { header: 'Líquido a Recibir', key: 'netPay', width: 16 },
+      ],
+      data.map((p: any) => ({
+        name: p.user.name,
+        baseSalary: `$${p.baseSalary.toFixed(2)}`,
+        overtimeHours50: p.overtimeHours50.toFixed(2),
+        overtimeHours100: p.overtimeHours100.toFixed(2),
+        overtimePay: `$${p.overtimePay.toFixed(2)}`,
+        grossIncome: `$${p.grossIncome.toFixed(2)}`,
+        iessPersonal: `$${p.iessPersonal.toFixed(2)}`,
+        absenceDays: p.absenceDays,
+        absenceDeduction: `$${p.absenceDeduction.toFixed(2)}`,
+        lateMinutes: p.lateMinutes,
+        lateDeduction: `$${p.lateDeduction.toFixed(2)}`,
+        netPay: `$${p.netPay.toFixed(2)}`,
+      })),
+    );
+
+    return workbook.xlsx.writeBuffer();
+  }
+
+  async generatePayrollPDF(month: number, year: number) {
+
+    const data = await this.getPayroll(month, year);
+
+    const doc = new PDFDocument({ margin: 40, bufferPages: true });
+    const buffers: Buffer[] = [];
+    doc.on('data', buffers.push.bind(buffers));
+
+    const totalNet = data.reduce((s: number, p: any) => s + p.netPay, 0);
+
+    const startY = this.drawPdfHeader(
+      doc,
+      'Reporte de Pago',
+      `${month}/${year} · ${data.length} empleado(s) · $${totalNet.toFixed(2)} líquido total`,
+    );
+
+    this.drawPdfTable(
+      doc,
+      startY,
+      [
+        { header: 'Empleado', key: 'name', width: 140 },
+        { header: 'Sueldo Base', key: 'baseSalary', width: 65, align: 'right' },
+        { header: 'H. Extra', key: 'overtimeHours', width: 55, align: 'right' },
+        { header: 'IESS Pers.', key: 'iessPersonal', width: 60, align: 'right' },
+        { header: 'Faltas', key: 'absenceDays', width: 40, align: 'right' },
+        { header: 'Atrasos', key: 'lateMinutes', width: 50, align: 'right' },
+        { header: 'Líquido', key: 'netPay', width: 65, align: 'right' },
+      ],
+      data.map((p: any) => ({
+        name: p.user.name,
+        baseSalary: `$${p.baseSalary.toFixed(2)}`,
+        overtimeHours: (p.overtimeHours50 + p.overtimeHours100).toFixed(1),
+        iessPersonal: `$${p.iessPersonal.toFixed(2)}`,
+        absenceDays: p.absenceDays,
+        lateMinutes: p.lateMinutes,
+        netPay: `$${p.netPay.toFixed(2)}`,
       })),
     );
 

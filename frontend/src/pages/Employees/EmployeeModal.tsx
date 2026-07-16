@@ -2,6 +2,7 @@ import {
   Modal,
   Form,
   Input,
+  InputNumber,
   Select,
   message,
 } from "antd";
@@ -48,6 +49,7 @@ export default function EmployeeModal({
           role: employee.role,
           phone: employee.phone,
           positionId: employee.positionId ?? undefined,
+          baseSalary: employee.baseSalary ?? undefined,
         });
       } else {
         form.resetFields();
@@ -68,6 +70,7 @@ export default function EmployeeModal({
           role: values.role,
           phone: values.phone,
           positionId: values.positionId ?? null,
+          baseSalary: values.baseSalary ?? null,
         };
 
         if (values.password) {
@@ -200,6 +203,19 @@ export default function EmployeeModal({
             options={positions
               .filter((p) => p.active)
               .map((p) => ({ value: p.id, label: p.name }))}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Sueldo base mensual (USD)"
+          name="baseSalary"
+          rules={[{ type: "number", min: 0, message: "El sueldo no puede ser negativo" }]}
+        >
+          <InputNumber
+            style={{ width: "100%" }}
+            min={0}
+            precision={2}
+            placeholder="Ej: 460.00"
           />
         </Form.Item>
 

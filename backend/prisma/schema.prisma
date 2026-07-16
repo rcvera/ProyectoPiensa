@@ -63,6 +63,7 @@ model User {
   reviewedIncidents Incident[]       @relation("ReviewerIncidents")
   notifications     Notification[]
   workloadSurveys   WorkloadSurvey[]
+  payslips          Payslip[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -75,6 +76,8 @@ model Employee {
   name   String
   cedula String? @unique
   phone  String?
+
+  baseSalary Float?
 
   positionId String?
   position   Position? @relation(fields: [positionId], references: [id])
@@ -147,6 +150,9 @@ model Overtime {
 
   overtimeHours Float
 
+  overtimeHours50  Float @default(0)
+  overtimeHours100 Float @default(0)
+
   date DateTime
 
   createdAt DateTime @default(now())
@@ -154,6 +160,39 @@ model Overtime {
   user User @relation(fields: [userId], references: [id])
 
   attendance Attendance @relation(fields: [attendanceId], references: [id])
+}
+
+model Payslip {
+  id String @id @default(uuid())
+
+  userId String
+
+  month Int
+  year  Int
+
+  baseSalary Float
+
+  expectedDays Int
+  workedDays   Int
+  absenceDays  Int
+  lateMinutes  Int
+
+  overtimeHours50  Float
+  overtimeHours100 Float
+  overtimePay      Float
+
+  grossIncome      Float
+  iessPersonal     Float
+  iessPatronal     Float
+  absenceDeduction Float
+  lateDeduction    Float
+  netPay           Float
+
+  generatedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, month, year])
 }
 
 model Incident {

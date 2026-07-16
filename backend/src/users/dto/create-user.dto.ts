@@ -3,6 +3,8 @@ import {
   IsString,
   IsOptional,
   IsIn,
+  IsNumber,
+  Min,
   MinLength,
   Matches,
 } from 'class-validator';
@@ -35,4 +37,9 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   positionId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  baseSalary?: number;
 }

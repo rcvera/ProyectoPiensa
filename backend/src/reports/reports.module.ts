@@ -9,8 +9,11 @@ from './reports.service';
 import { PrismaModule }
 from '../prisma/prisma.module';
 
+import { PayrollModule }
+from '../payroll/payroll.module';
+
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, PayrollModule],
   controllers: [ReportsController],
   providers: [ReportsService],
 })
