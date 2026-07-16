@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 
@@ -17,6 +18,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import type { AuthRequest } from '../auth/types/auth-request.type';
 
 @UseGuards(
   JwtAuthGuard,
@@ -40,9 +42,12 @@ export class UsersController {
     );
   }
 
+  @Roles('ADMIN', 'SUPERVISOR')
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(
+    @Req() req: AuthRequest,
+  ) {
+    return this.usersService.findAll(req.user.role);
   }
 
   @Roles('ADMIN')

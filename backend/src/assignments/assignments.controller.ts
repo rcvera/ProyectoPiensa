@@ -36,6 +36,7 @@ export class AssignmentsController {
     return this.assignmentsService.upsert(dto);
   }
 
+  @Roles('ADMIN', 'SUPERVISOR')
   @Get()
   findAll(
     @Query('from') from?: string,

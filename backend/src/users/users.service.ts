@@ -49,7 +49,9 @@ const USER_SELECT = {
 
 // Aplana { ...user, employee: { name, cedula, ... } } a la forma plana
 // que espera el frontend: { ...user, name, cedula, ... }
-function flattenUser(user: any) {
+// El sueldo es dato sensible: solo se incluye si quien pregunta es ADMIN
+// (ej. un SUPERVISOR listando empleados para asignar turnos no lo ve).
+function flattenUser(user: any, requesterRole: string = 'ADMIN') {
   const { employee, ...rest } = user;
   return {
     ...rest,
@@ -58,7 +60,9 @@ function flattenUser(user: any) {
     phone: employee?.phone ?? null,
     positionId: employee?.positionId ?? null,
     position: employee?.position ?? null,
-    baseSalary: employee?.baseSalary ?? null,
+    ...(requesterRole === 'ADMIN'
+      ? { baseSalary: employee?.baseSalary ?? null }
+      : {}),
   };
 }
 
@@ -116,12 +120,12 @@ export class UsersService {
     return flattenUser(user);
   }
 
-  async findAll() {
+  async findAll(requesterRole: string) {
     const users = await this.prisma.user.findMany({
       select: USER_SELECT,
       orderBy: { createdAt: 'desc' },
     });
-    return users.map(flattenUser);
+    return users.map((u) => flattenUser(u, requesterRole));
   }
 
   async update(id: string, dto: UpdateUserDto) {
