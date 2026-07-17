@@ -195,9 +195,13 @@ export class OvertimesService {
   }
 
   async getWeekSummary(userId: string, from: string, to: string) {
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
-    toDate.setHours(23, 59, 59, 999);
+    // "YYYY-MM-DD" no debe parsearse con `new Date(str)`: eso da medianoche
+    // UTC, que en Ecuador (UTC-5) cae la noche anterior — un .setHours()
+    // posterior operaría sobre ese día corrido, no el pedido.
+    const [fy, fm, fd] = from.split('-').map(Number);
+    const fromDate = new Date(fy, fm - 1, fd, 0, 0, 0, 0);
+    const [ty, tm, td] = to.split('-').map(Number);
+    const toDate = new Date(ty, tm - 1, td, 23, 59, 59, 999);
 
     const records = await this.prisma.overtime.findMany({
       where: { userId, date: { gte: fromDate, lte: toDate } },

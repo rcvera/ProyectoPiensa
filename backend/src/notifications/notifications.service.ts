@@ -163,10 +163,13 @@ export class NotificationsService {
 
     if (userIds.length === 0) return;
 
+    // weekStart/weekEnd vienen de parsear "YYYY-MM-DD" (medianoche UTC);
+    // formatearlas en la zona local las correría un día en Ecuador.
     const format = (d: Date) =>
       d.toLocaleDateString('es-AR', {
         day: '2-digit',
         month: '2-digit',
+        timeZone: 'UTC',
       });
 
     await this.prisma.notification.createMany({

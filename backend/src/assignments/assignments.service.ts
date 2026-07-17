@@ -147,11 +147,15 @@ export class AssignmentsService {
       cursor.setDate(cursor.getDate() + 1);
     }
 
-    // Filter by ISO day of week (1=Mon … 7=Sun) if provided
+    // Filter by ISO day of week (1=Mon … 7=Sun) if provided.
+    // `allDays` se construye por aritmética sobre fechas ancladas a
+    // medianoche UTC (mismo criterio que la columna @db.Date de
+    // Assignment), así que el día de semana debe leerse en UTC — con
+    // getDay() local queda corrido un día en Ecuador (UTC-5).
     const days =
       isoDays && isoDays.length > 0
         ? allDays.filter((d) => {
-            const iso = d.getDay() === 0 ? 7 : d.getDay();
+            const iso = d.getUTCDay() === 0 ? 7 : d.getUTCDay();
             return isoDays.includes(iso);
           })
         : allDays;

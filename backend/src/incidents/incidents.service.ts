@@ -95,14 +95,17 @@ export class IncidentsService {
     if (filters.from || filters.to) {
       where.createdAt = {};
 
+      // "YYYY-MM-DD" no debe parsearse con `new Date(str)`: eso da
+      // medianoche UTC, que en Ecuador (UTC-5) cae la noche anterior y
+      // excluye el día completo pedido en "to".
       if (filters.from) {
-        where.createdAt.gte =
-          new Date(filters.from);
+        const [fy, fm, fd] = filters.from.split('-').map(Number);
+        where.createdAt.gte = new Date(fy, fm - 1, fd, 0, 0, 0, 0);
       }
 
       if (filters.to) {
-        where.createdAt.lte =
-          new Date(filters.to);
+        const [ty, tm, td] = filters.to.split('-').map(Number);
+        where.createdAt.lte = new Date(ty, tm - 1, td, 23, 59, 59, 999);
       }
     }
 

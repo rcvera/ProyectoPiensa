@@ -191,11 +191,15 @@ export class AttendancesService {
 
     if (from || to) {
       where.checkIn = {};
-      if (from) where.checkIn.gte = new Date(from);
+      // "YYYY-MM-DD" no debe parsearse con `new Date(str)`: eso da medianoche
+      // UTC, que en Ecuador (UTC-5) cae la noche anterior.
+      if (from) {
+        const [fy, fm, fd] = from.split('-').map(Number);
+        where.checkIn.gte = new Date(fy, fm - 1, fd, 0, 0, 0, 0);
+      }
       if (to) {
-        const toDate = new Date(to);
-        toDate.setHours(23, 59, 59, 999);
-        where.checkIn.lte = toDate;
+        const [ty, tm, td] = to.split('-').map(Number);
+        where.checkIn.lte = new Date(ty, tm - 1, td, 23, 59, 59, 999);
       }
     }
 
