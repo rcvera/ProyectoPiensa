@@ -4,6 +4,13 @@ import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { AppModule } from './app.module';
 
+// Todos los cálculos de asistencia/nómina usan getHours/getMinutes/getDay
+// locales, asumiendo hora de Ecuador. Sin esto, el contenedor de Railway
+// corre en UTC y esos cálculos quedan corridos 5 horas (atrasos, recargo
+// nocturno y de fin de semana quedan mal). Debe fijarse antes de cualquier
+// operación con Date.
+process.env.TZ = 'America/Guayaquil';
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
