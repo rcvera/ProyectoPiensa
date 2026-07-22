@@ -11,6 +11,7 @@ import { OvertimesModule } from './overtimes/overtimes.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ReportsModule } from './reports/reports.module';
 import { IncidentsModule } from './incidents/incidents.module';
+import { JustificationsModule } from './justifications/justifications.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PositionsModule } from './positions/positions.module';
 import { WorkloadSurveysModule } from './workload-surveys/workload-surveys.module';
@@ -30,6 +31,7 @@ import { PayrollModule } from './payroll/payroll.module';
     DashboardModule,
     ReportsModule,
     IncidentsModule,
+    JustificationsModule,
     NotificationsModule,
     PositionsModule,
     WorkloadSurveysModule,

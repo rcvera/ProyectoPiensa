@@ -33,6 +33,19 @@ enum IncidentStatus {
   CERRADO
 }
 
+enum JustificationType {
+  ENFERMEDAD
+  CALAMIDAD_DOMESTICA
+  LUTO
+  OTRO
+}
+
+enum JustificationStatus {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+}
+
 model Position {
   id     String  @id @default(uuid())
   name   String  @unique
@@ -64,6 +77,9 @@ model User {
   notifications     Notification[]
   workloadSurveys   WorkloadSurvey[]
   payslips          Payslip[]
+
+  justifications         Justification[] @relation("EmployeeJustifications")
+  reviewedJustifications Justification[] @relation("JustificationReviewer")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -220,8 +236,9 @@ model Incident {
 model Notification {
   id String @id @default(uuid())
 
-  userId     String
-  incidentId String?
+  userId         String
+  incidentId     String?
+  justificationId String?
 
   title   String
   message String
@@ -229,8 +246,36 @@ model Notification {
 
   createdAt DateTime @default(now())
 
-  user     User      @relation(fields: [userId], references: [id])
-  incident Incident? @relation(fields: [incidentId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  incident      Incident?     @relation(fields: [incidentId], references: [id])
+  justification Justification? @relation(fields: [justificationId], references: [id])
+}
+
+model Justification {
+  id String @id @default(uuid())
+
+  userId String
+
+  // Día que se está justificando (falta, no la fecha en que se reporta).
+  date DateTime @db.Date
+
+  type        JustificationType
+  description String
+
+  // Certificado médico, acta de defunción, etc. Imagen o PDF.
+  documentUrl String?
+
+  status        JustificationStatus @default(PENDIENTE)
+  adminResponse String?
+  reviewedById  String?
+  reviewedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          User           @relation("EmployeeJustifications", fields: [userId], references: [id])
+  reviewedBy    User?          @relation("JustificationReviewer", fields: [reviewedById], references: [id])
+  notifications Notification[]
 }
 
 model WorkloadSurvey {

@@ -23,6 +23,7 @@ import {
   ApartmentOutlined,
   LockOutlined,
   DollarOutlined,
+  FileProtectOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -124,6 +125,11 @@ export default function MainLayout() {
       label: "Incidentes",
     },
     {
+      key: "/justifications",
+      icon: <FileProtectOutlined />,
+      label: "Justificaciones",
+    },
+    {
       key: "/payroll",
       icon: <DollarOutlined />,
       label: "Nómina",
@@ -161,6 +167,11 @@ export default function MainLayout() {
       icon: <WarningOutlined />,
       label: "Incidentes",
     },
+    {
+      key: "/justifications",
+      icon: <FileProtectOutlined />,
+      label: "Justificaciones",
+    },
   ];
 
   const employeeItems = [
@@ -184,6 +195,16 @@ export default function MainLayout() {
       key: "/incidents/mine",
       icon: <WarningOutlined />,
       label: "Mis Incidentes",
+    },
+    {
+      key: "/justifications/new",
+      icon: <FileProtectOutlined />,
+      label: "Justificar Falta",
+    },
+    {
+      key: "/justifications/mine",
+      icon: <FileProtectOutlined />,
+      label: "Mis Justificaciones",
     },
     {
       key: "/payroll",

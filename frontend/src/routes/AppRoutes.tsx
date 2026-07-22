@@ -20,6 +20,10 @@ import CreateIncident from "../pages/Incidents/CreateIncident";
 import MyIncidents from "../pages/Incidents/MyIncidents";
 import IncidentsList from "../pages/Incidents/IncidentsList";
 import IncidentDetail from "../pages/Incidents/IncidentDetail";
+import CreateJustification from "../pages/Justifications/CreateJustification";
+import MyJustifications from "../pages/Justifications/MyJustifications";
+import JustificationsList from "../pages/Justifications/JustificationsList";
+import JustificationDetail from "../pages/Justifications/JustificationDetail";
 import MySchedulePage from "../pages/MySchedule/MySchedulePage";
 import MyAttendancePage from "../pages/MyAttendance/MyAttendancePage";
 import PositionsPage from "../pages/Positions/PositionsPage";
@@ -85,6 +89,22 @@ export default function AppRoutes() {
           <Route
             path="/incidents/:id"
             element={<IncidentDetail />}
+          />
+          <Route
+            path="/justifications"
+            element={<JustificationsList />}
+          />
+          <Route
+            path="/justifications/new"
+            element={<CreateJustification />}
+          />
+          <Route
+            path="/justifications/mine"
+            element={<MyJustifications />}
+          />
+          <Route
+            path="/justifications/:id"
+            element={<JustificationDetail />}
           />
           <Route
             path="/my-schedule"

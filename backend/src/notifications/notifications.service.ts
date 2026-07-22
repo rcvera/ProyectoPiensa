@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import type {
   Incident,
+  Justification,
   User,
 } from '@prisma/client';
 
@@ -28,6 +29,13 @@ export class NotificationsService {
       },
       include: {
         incident: {
+          select: {
+            id: true,
+            type: true,
+            status: true,
+          },
+        },
+        justification: {
           select: {
             id: true,
             type: true,
@@ -151,6 +159,53 @@ export class NotificationsService {
         title: 'Tu incidente fue actualizado',
         message:
           `Estado actualizado a ${incident.status}`,
+      },
+    });
+  }
+
+  async notifyNewJustification(
+    justification: Justification & { user: User & { name: string } },
+  ): Promise<void> {
+
+    const supervisors =
+      await this.prisma.user.findMany({
+        where: {
+          role: { in: ['ADMIN', 'SUPERVISOR'] },
+          active: true,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (supervisors.length === 0) {
+      return;
+    }
+
+    await this.prisma.notification.createMany({
+      data: supervisors.map(
+        (supervisor) => ({
+          userId: supervisor.id,
+          justificationId: justification.id,
+          title: 'Nueva justificación de falta',
+          message:
+            `${justification.user.name} justificó su falta: ${justification.type}`,
+        }),
+      ),
+    });
+  }
+
+  async notifyJustificationResponse(
+    justification: Justification,
+  ): Promise<void> {
+
+    await this.prisma.notification.create({
+      data: {
+        userId: justification.userId,
+        justificationId: justification.id,
+        title: 'Tu justificación fue actualizada',
+        message:
+          `Estado actualizado a ${justification.status}`,
       },
     });
   }

@@ -56,6 +56,7 @@ interface NotificationItem {
   read: boolean;
   createdAt: string;
   incidentId?: string;
+  justificationId?: string;
 }
 
 export default function NotificationsBell() {
@@ -125,6 +126,10 @@ export default function NotificationsBell() {
     if (n.incidentId) {
       navigate(
         `/incidents/${n.incidentId}`,
+      );
+    } else if (n.justificationId) {
+      navigate(
+        `/justifications/${n.justificationId}`,
       );
     }
   };
