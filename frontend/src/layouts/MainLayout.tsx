@@ -132,7 +132,7 @@ export default function MainLayout() {
     {
       key: "/payroll",
       icon: <DollarOutlined />,
-      label: "Nómina",
+      label: "Rol de Pagos",
     },
     {
       key: "/reports",
@@ -209,7 +209,7 @@ export default function MainLayout() {
     {
       key: "/payroll",
       icon: <DollarOutlined />,
-      label: "Mi Nómina",
+      label: "Mi Rol de Pagos",
     },
   ];
 
