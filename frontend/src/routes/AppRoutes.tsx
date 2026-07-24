@@ -28,6 +28,8 @@ import MySchedulePage from "../pages/MySchedule/MySchedulePage";
 import MyAttendancePage from "../pages/MyAttendance/MyAttendancePage";
 import PositionsPage from "../pages/Positions/PositionsPage";
 import PayrollPage from "../pages/Payroll/PayrollPage";
+import MyWorkloadSurveys from "../pages/WorkloadSurveys/MyWorkloadSurveys";
+import WorkloadSurveysList from "../pages/WorkloadSurveys/WorkloadSurveysList";
 
 export default function AppRoutes() {
   return (
@@ -123,6 +125,14 @@ export default function AppRoutes() {
           <Route
             path="/payroll"
             element={<PayrollPage />}
+          />
+          <Route
+            path="/workload-surveys"
+            element={<WorkloadSurveysList />}
+          />
+          <Route
+            path="/workload-surveys/mine"
+            element={<MyWorkloadSurveys />}
           />
         </Route>
 

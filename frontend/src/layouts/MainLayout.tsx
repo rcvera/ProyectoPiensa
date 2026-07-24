@@ -24,6 +24,7 @@ import {
   LockOutlined,
   DollarOutlined,
   FileProtectOutlined,
+  SmileOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -135,6 +136,11 @@ export default function MainLayout() {
       label: "Rol de Pagos",
     },
     {
+      key: "/workload-surveys",
+      icon: <SmileOutlined />,
+      label: "Carga Laboral",
+    },
+    {
       key: "/reports",
       icon: <FileTextOutlined />,
       label: "Reportes",
@@ -210,6 +216,11 @@ export default function MainLayout() {
       key: "/payroll",
       icon: <DollarOutlined />,
       label: "Mi Rol de Pagos",
+    },
+    {
+      key: "/workload-surveys/mine",
+      icon: <SmileOutlined />,
+      label: "Mi Carga Laboral",
     },
   ];
 
